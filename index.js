@@ -34,6 +34,29 @@ app.get("/report/:reportname", async (req, res, next) => {
   }
 });
 
+//download report as csv file
+app.get("/report/:reportname/csv", async (req, res, next) => {
+  try {
+    const {reportname} = req.params;
+    const {runReport} = require(`./routes/${reportname}`);
+    if (typeof runReport === "function") {
+      const jsonData = await runReport(reportname);
+      const csvData = jsonCsv.parse(jsonData);
+
+      // set headers for download
+      res.setHeader('Content-disposition', `attachment; filename=${reportname}.csv`);
+      res.set('Content-Type', 'text/csv');
+      // send the csv datda as response
+      res.status(200).send(csvData);
+    } else{
+      throw new Error(`runReport not found for ${reportname}`);
+    }
+  } catch (err){
+    console.error(`error downloading report for ${reportname}`, err);
+    res.status(500).send(`error downloading report for ${reportname}, error: ${err.message}`);
+  }
+});
+
 
 //port listening
 app.listen(port, () => {
