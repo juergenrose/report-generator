@@ -2,11 +2,14 @@ const express = require("express");
 const app = express();
 const port = 3000;
 
-const fs = require('fs').promises;
+const fs = require("fs").promises;
 
 //required for downloads
 const jsonCsv = require("json2csv");
-const fastcsv = require("fast-csv");
+
+app.get("/report", (req, res) => {
+  res.send("now you can search for a report");
+});
 
 //search <reportname> file and run it
 app.get("/report/:reportname", async (req, res, next) => {
@@ -19,10 +22,10 @@ app.get("/report/:reportname", async (req, res, next) => {
     } catch (err) {
       console.error(`file ${reportname} not found.`);
       res.status(404).send(`file ${reportname} not found.`);
-      return; 
+      return;
     }
-    // if file exists, dynamically import the module
-    const { runQuery } = require(filePath); // import specific query function from reportname
+    // if file exists, import the module
+    const { runQuery } = require(filePath); // import query function from reportname
     if (typeof runQuery === "function") {
       const result = await runQuery(reportname);
       console.log(`file ${reportname} exists, getting querys...`);
@@ -37,26 +40,32 @@ app.get("/report/:reportname", async (req, res, next) => {
 //download report as csv file
 app.get("/report/:reportname/csv", async (req, res, next) => {
   try {
-    const {reportname} = req.params;
-    const {runReport} = require(`./routes/${reportname}`);
+    const { reportname } = req.params;
+    const { runReport } = require(`./routes/${reportname}`);
     if (typeof runReport === "function") {
       const jsonData = await runReport(reportname);
       const csvData = jsonCsv.parse(jsonData);
 
       // set headers for download
-      res.setHeader('Content-disposition', `attachment; filename=${reportname}.csv`);
-      res.set('Content-Type', 'text/csv');
+      res.setHeader(
+        "Content-disposition",
+        `attachment; filename=${reportname}.csv`
+      );
+      res.set("Content-Type", "text/csv");
       // send the csv datda as response
       res.status(200).send(csvData);
-    } else{
-      throw new Error(`runReport not found for ${reportname}`);
+    } else {
+      throw error(`runReport not found for ${reportname}`);
     }
-  } catch (err){
+  } catch (err) {
     console.error(`error downloading report for ${reportname}`, err);
-    res.status(500).send(`error downloading report for ${reportname}, error: ${err.message}`);
+    res
+      .status(500)
+      .send(
+        `error downloading report for ${reportname}, error: ${err.message}`
+      );
   }
 });
-
 
 //port listening
 app.listen(port, () => {
