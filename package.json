@@ -11,7 +11,6 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "fast-csv": "^5.0.1",
     "json2csv": "^6.0.0-alpha.2",
     "mssql": "^10.0.2",
     "mysql2": "^3.9.7"
