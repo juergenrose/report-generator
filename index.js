@@ -26,7 +26,7 @@ app.get("/report/:reportname", async (req, res, next) => {
     }
     // if file exists, import the module
     const { runQuery } = require(filePath); // import query function from reportname
-    if (typeof runQuery === "function") {
+    if (typeof runQuery === "function") { //checks if runQuery is an function
       const result = await runQuery(reportname);
       console.log(`file ${reportname} exists, getting querys...`);
       res.json(result);
@@ -42,17 +42,17 @@ app.get("/report/:reportname/csv", async (req, res, next) => {
   try {
     const { reportname } = req.params;
     const { runReport } = require(`./routes/${reportname}`);
-    if (typeof runReport === "function") {
+    if (typeof runReport === "function") { // checks if runReport is a function
       const jsonData = await runReport(reportname);
-      const csvData = jsonCsv.parse(jsonData);
+      const csvData = jsonCsv.parse(jsonData); //convert json data to csv
 
-      // set headers for download
+      // set headers for download the csv file
       res.setHeader(
         "Content-disposition",
         `attachment; filename=${reportname}.csv`
       );
       res.set("Content-Type", "text/csv");
-      // send the csv datda as response
+      // send the csv datda as the response
       res.status(200).send(csvData);
     } else {
       throw error(`runReport not found for ${reportname}`);
