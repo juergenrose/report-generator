@@ -5,10 +5,19 @@ const sql = require("mssql");
 async function runQuery() {
   try {
     const pool = await sql.connect(config);
-    const result = await pool.request().query("SELECT * FROM SAPExchange");
-    return result.recordsets;
+    const queries = [
+      "SELECT * FROM SAdExchange WHERE excID = 15",
+      "SELECT * FROM SAPExchange WHERE excID = 17",
+    ];
+    const results = await Promise.allSettled(
+      queries.map((query) => pool.request().query(query))
+    );
+    return results.map((result) =>
+      result.value ? result.value.recordset : null
+    );
   } catch (err) {
     console.error(err);
+    return { data: null, error: err.message };
   }
 }
 
@@ -19,6 +28,7 @@ async function runReport() {
     return result;
   } catch (err) {
     console.error(err);
+    return { data: null, error: err.message };
   }
 }
 

@@ -3,11 +3,15 @@ const db = require("../config/mysql_db").promise();
 //some query...
 async function runQuery() {
   try {
-    const query = `SELECT * FROM city`;
-    const result = await db.query(query);
-    return result;
+    const queries = [
+      "SELECT * FROM city WHERE IsD = 12", 
+      "SELECT * FROM country WHERE Name = 'Austria'",
+    ];
+    const results = await Promise.all(queries.map((query) => db.query(query)));
+    return results.map(([rows, fields]) => rows);
   } catch (err) {
     console.error(err);
+    return { data: null, error: err.message };
   }
 }
 
@@ -18,6 +22,7 @@ async function runReport() {
     return result;
   } catch (err) {
     console.error(err);
+    return { data: null, error: err.message };
   }
 }
 
