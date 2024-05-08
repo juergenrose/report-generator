@@ -7,7 +7,7 @@ async function runQuery() {
     const pool = await sql.connect(config);
     const queries = [
       "SELECT * FROM AppConnect WHERE ac_ID = 7",
-      "SELECT * FROM JobAttachments WHERE jf_ID = 25272",
+      "SELECT * FROM Jobs",
     ];
     //execute all queries using concurrently Promise.allSettled
     //Promise.allSettled settles once all promises have completed, regardless of their resolution

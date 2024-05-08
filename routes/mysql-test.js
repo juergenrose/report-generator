@@ -5,7 +5,7 @@ async function runQuery() {
   try {
     const queries = [
       "SELECT * FROM city WHERE ID = 12",
-      "SELECT * FROM country WHERE Name = 'Austria'",
+      "SELECT * FROM country",
     ];
     //execute all the queries concurrently using Promise.all
     //Promise.all waits for all promises to be fulfilled and returns an array of their results
