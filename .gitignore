@@ -1,6 +1,9 @@
 # Node.js
 node_modules/
 
+# Apche Fop
+fop/
+
 # Logs
 logs
 *.log
