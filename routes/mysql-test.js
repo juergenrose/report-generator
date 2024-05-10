@@ -5,12 +5,13 @@ async function runQuery() {
   try {
     const queries = [
       "SELECT * FROM city WHERE ID = 12",
-      "SELECT * FROM country",
+      "SELECT * FROM country WHERE Continent = 'Europe'",
     ];
     //execute all the queries concurrently using Promise.all
     //Promise.all waits for all promises to be fulfilled and returns an array of their results
     const results = await Promise.all(queries.map((query) => db.query(query)));
-    return results.map(([rows, fields]) => rows); //map over the results and extract the rows from each query result
+    const combinedRows = results.flatMap(([rows, fields]) => rows);
+    return combinedRows;
   } catch (err) {
     console.error(err);
     const error = {
