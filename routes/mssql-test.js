@@ -6,18 +6,24 @@ async function runQuery() {
   try {
     const pool = await sql.connect(config);
     const queries = [
-      "SELECT * FROM AppConnect WHERE ac_ID = 7",
-      "SELECT * FROM Jobs",
+      "SELECT * FROM Parameter",
+      "SELECT * FROM Jobs WHERE j_State = 10",
     ];
     //execute all queries using concurrently Promise.allSettled
     //Promise.allSettled settles once all promises have completed, regardless of their resolution
     const results = await Promise.allSettled(
       queries.map((query) => pool.request().query(query))
     );
-    //map over the results and extract the record sets from successful queries
-    return results.map((result) =>
-      result.value ? result.value.recordset : null
-    );
+
+    //filter out only fulfilled promises and extract record sets
+    const recordSets = results
+      .filter((result) => result.status === "fulfilled")
+      .map((result) => result.value.recordset);
+
+    //flatten the array of record sets into a single array of rows
+    const combinedRows = recordSets.flatMap((rows) => rows);
+
+    return combinedRows;
   } catch (err) {
     console.error(err);
     return { data: null, error: err.message };
