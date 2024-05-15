@@ -48,7 +48,6 @@ async function runQuery(params) {
   }
 }
 
-
 //take runQuery and runs report function
 async function runReport(params) {
   try {
