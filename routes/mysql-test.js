@@ -1,15 +1,35 @@
 const db = require("../config/mysql_db").promise();
 
 //some query...
-async function runQuery() {
+async function runQuery(params) {
   try {
-    const queries = [
-      "SELECT * FROM city WHERE ID = 12",
-      "SELECT * FROM country WHERE Continent = 'Europe'",
+    //define parameters for each query
+    const paramOne = [params.continent];
+    const paramTwo = [params.language];
+
+    const predefinedQueries = [
+      "SELECT * FROM country WHERE Continent = ?",
+      "SELECT * FROM countrylanguage WHERE Language = ?",
     ];
+
+    //construct dynamic queries
+    const dynamicQueries = predefinedQueries.map((query, index) => {
+      return {
+        query: query,
+        params: index === 0 ? paramOne : paramTwo, //use appropriate parameters for each query
+      };
+    });
+
+    console.log("Dynamic Queries:", dynamicQueries); //log dynamic queries
+
     //execute all the queries concurrently using Promise.all
-    //Promise.all waits for all promises to be fulfilled and returns an array of their results
-    const results = await Promise.all(queries.map((query) => db.query(query)));
+    const results = await Promise.all(
+      dynamicQueries.map(({ query, params }) => db.query(query, params))
+    );
+
+    console.log("Query Results:", results); //log query results
+
+    //combine the results from all queries
     const combinedRows = results.flatMap(([rows, fields]) => rows);
     return combinedRows;
   } catch (err) {
@@ -28,10 +48,11 @@ async function runQuery() {
   }
 }
 
+
 //take runQuery and runs report function
-async function runReport() {
+async function runReport(params) {
   try {
-    const result = await runQuery();
+    const result = await runQuery(params);
     return result;
   } catch (err) {
     console.error(err);

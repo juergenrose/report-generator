@@ -2,18 +2,39 @@ const config = require("../config/mssql_db");
 const sql = require("mssql");
 
 //some query...
-async function runQuery() {
+async function runQuery(params) {
   try {
     const pool = await sql.connect(config);
-    const queries = [
-      "SELECT * FROM Parameter",
-      "SELECT * FROM Jobs WHERE j_State = 10",
+
+    //define parameters for each query
+    const paramOne = params.vorname;
+    const paramTwo = params.sollwert;
+
+    const predefinedQueries = [
+      {
+        query: "SELECT * FROM MMTeilnehmer WHERE Vorname = @vorname",
+        params: { vorname: paramOne },
+      },
+      {
+        query: "SELECT * FROM Messwerte WHERE Sollwert = @sollwert",
+        params: { sollwert: paramTwo },
+      },
     ];
+    console.log("Dynamic Queries:", predefinedQueries); //log dynamic queries
+
     //execute all queries using concurrently Promise.allSettled
-    //Promise.allSettled settles once all promises have completed, regardless of their resolution
     const results = await Promise.allSettled(
-      queries.map((query) => pool.request().query(query))
+      predefinedQueries.map(({ query, params }) => {
+        const request = pool.request();
+        // Add parameters to the request
+        for (const [key, value] of Object.entries(params)) {
+          request.input(key, value);
+        }
+        return request.query(query);
+      })
     );
+
+    console.log("Query Results:", results); //log query results
 
     //filter out only fulfilled promises and extract record sets
     const recordSets = results
@@ -31,9 +52,9 @@ async function runQuery() {
 }
 
 //take runQuery and runs report function
-async function runReport() {
+async function runReport(params) {
   try {
-    const result = await runQuery();
+    const result = await runQuery(params);
     return result;
   } catch (err) {
     console.error(err);
