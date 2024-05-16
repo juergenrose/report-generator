@@ -119,7 +119,6 @@ async function handlePdfReport(reportname, reportData, res) {
     });
     //finalize the pdf 
     doc.end();
-    res.status(200).send("PDF report generated successfully witch PDFKit.");
   } catch (err) {
     console.error(`Error generating PDF report for ${reportname}`, err);
     res.status(500).send(`Error generating PDF report for ${reportname}: ${err.message}`);
