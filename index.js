@@ -27,8 +27,6 @@ const parseQuery = (queryParams) => {
   return { value, format };
 };
 
-
-
 //search <reportname>.js file and run it
 app.get("/report/:reportname", async (req, res) => {
   try {
@@ -70,12 +68,14 @@ app.get("/report/:reportname", async (req, res) => {
   }
 });
 
-
-
 // handler for csv reports
 async function handleCsvReport(reportname, reportData, res) {
+  const csvDir = path.join(__dirname, "csv");
   try {
     const csvData = jsonCsv.parse(reportData); // Convert JSON data to CSV
+    const csvFilePath = path.join(csvDir, `${reportname}.csv`);
+    await fsPromise.writeFile(csvFilePath, csvData); // Write CSV data to file
+
     //set header
     res.setHeader("Content-disposition", `attachment; filename=${reportname}.csv`);
     res.set("Content-Type", "text/csv");
@@ -90,9 +90,12 @@ async function handleCsvReport(reportname, reportData, res) {
 
 //handler for pdf reports
 async function handlePdfReport(reportname, reportData, res) {
+  const pdfDir = path.join(__dirname, "pdf");
   try {
+    const pdfFilePath = path.join(pdfDir, `${reportname}.pdf`);
     //create new pdf document
     const doc = new PDFDocument();
+    doc.pipe(fs.createWriteStream(pdfFilePath)); // Pipe PDF output to file
     //set headers
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename=${reportname}.pdf`);
