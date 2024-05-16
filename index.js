@@ -15,198 +15,170 @@ app.get("/report", (req, res) => {
   res.send("now you can search for a report");
 });
 
-//helper function to parse sollwert and format
-const parseSollwert = (sollwert) => {
-  const formatMatch = sollwert.match(/(\/pdf|\/csv|\/xml)$/);
-  if (formatMatch) {
-    const format = formatMatch[0].substring(1); //remove leading slash
-    const value = sollwert.substring(0, formatMatch.index);
-    return { value, format };
-  }
-  return { value: sollwert, format: null };
+
+//helper function to parse and format
+const parseQuery = (queryParams) => {
+  //extract the foramt params from the query params , if it exists, or set to null if it does not
+  const format = queryParams.format || null;
+  //create a copy of the query params to avoid mutaating the original object
+  const value = { ...queryParams };
+  //remove the format parameter from the copy of query params
+  delete value.format;
+  return { value, format };
 };
 
+
+
 //search <reportname>.js file and run it
-app.get("/report/:reportname", async (req, res, next) => {
+app.get("/report/:reportname", async (req, res) => {
   try {
     const { reportname } = req.params;
-    let { vorname, sollwert } = req.query;
+    //parse the query params and determine the format (if any)
+    const { value: queryParams, format } = parseQuery(req.query);
 
-    //parse sollwert to separate value and format
-    const { value: parsedSollwert, format } = parseSollwert(sollwert);
+    const filePath = path.join(__dirname, "routes", `${reportname}.js`);
+    await fsPromise.access(filePath); // Check if file exists
 
-    const filePath = `./routes/${reportname}.js`;
-
-    try {
-      await fsPromise.access(filePath); //check if file exists
-    } catch (err) {
-      console.error(`File ${reportname} not found.`);
-      res.status(404).send(`File ${reportname} not found.`);
-      return;
+    const { runReport } = require(filePath);
+    if (typeof runReport !== "function") {
+      throw new Error(`runReport function not found in ${reportname}.js`);
     }
 
-    // if file exists, import the module
-    const { runReport } = require(filePath);
-    if (typeof runReport === "function") {
-      // update queryParams with parsed sollwert
-      const queryParams = { vorname, sollwert: parsedSollwert };
-
-      if (format) {
-        switch (format) {
-          case "pdf":
-            await handlePdfReport(reportname, queryParams, res);
-            break;
-          case "csv":
-            await handleCsvReport(reportname, queryParams, res);
-            break;
-          case "xml":
-            await handleXmlReport(reportname, queryParams, res);
-            break;
-          default:
-            res.status(400).send("Invalid format specified.");
-        }
-      } else {
-        const result = await runReport(queryParams);
-        console.log(`File ${reportname} exists, getting queries...`);
-        res.json(result);
+    const reportData = await runReport(queryParams);
+    //check if a specific format is req. and handle accordingly
+    if (format) {
+      switch (format) {
+        case "pdf":
+          await handlePdfReport(reportname, reportData, res);
+          break;
+        case "csv":
+          await handleCsvReport(reportname, reportData, res);
+          break;
+        case "xml":
+          await handleXmlReport(reportname, reportData, res);
+          break;
+        default:
+          res.status(400).send("Invalid format specified.");
       }
     } else {
-      throw new Error(`runReport not found for ${reportname}`);
+      //if no format is specified , send report as json
+      res.json(reportData);
     }
   } catch (err) {
-    console.error(`Error running ${reportname}, error:`, err);
-    res.status(500).send(`Error running ${reportname}, error: ${err.message}`);
+    console.error(`Error running report ${reportname}:`, err);
+    res.status(500).send(`Error running report ${reportname}: ${err.message}`);
   }
 });
 
-// handler for csv reports
-async function handleCsvReport(reportname, queryParams, res) {
-  try {
-    const { runReport } = require(`./routes/${reportname}`);
-    const jsonData = await runReport(queryParams);
-    const csvData = jsonCsv.parse(jsonData); //convert json data to csv
 
-    //set headers for downloading the csv file
-    res.setHeader(
-      "Content-disposition",
-      `attachment; filename=${reportname}.csv`
-    );
+
+// handler for csv reports
+async function handleCsvReport(reportname, reportData, res) {
+  try {
+    const csvData = jsonCsv.parse(reportData); // Convert JSON data to CSV
+    //set header
+    res.setHeader("Content-disposition", `attachment; filename=${reportname}.csv`);
     res.set("Content-Type", "text/csv");
-    //send the csv data as the response
+    //send csv data with a 200 status 
     res.status(200).send(csvData);
   } catch (err) {
-    console.error(`error downloading report for ${reportname}`, err);
-    res
-      .status(500)
-      .send(
-        `error downloading report for ${reportname}, error: ${err.message}`
-      );
+    console.error(`Error generating CSV report for ${reportname}`, err);
+    res.status(500).send(`Error generating CSV report for ${reportname}: ${err.message}`);
   }
 }
 
+
 //handler for pdf reports
-async function handlePdfReport(reportname, queryParams, res) {
+async function handlePdfReport(reportname, reportData, res) {
   try {
-    const { runReport } = require(`./routes/${reportname}`);
-    const dbData = await runReport(queryParams);
-
-    //create a new pdf document
+    //create new pdf document
     const doc = new PDFDocument();
-
     //set headers
     res.setHeader("Content-Type", "application/pdf");
-    res.setHeader(
-      "Content-Disposition",
-      `attachment; filename=${reportname}.pdf`
-    );
-
-    //write pdf content to the response
+    res.setHeader("Content-Disposition", `attachment; filename=${reportname}.pdf`);
+    //pipe the pdf doc to the response
     doc.pipe(res);
-    doc
-      .font("Helvetica-Bold")
-      .text(`Report ${reportname}`, { align: "center" });
-    //write each record to the pdf
-    dbData.forEach((record, index) => {
-      if (index > 0) {
-        doc
-          .moveTo(doc.x, doc.y - 10)
-          .lineTo(550, doc.y - 10)
-          .stroke(); //draw a line between records
-      }
+
+    //add title (bold and center)
+    doc.font("Helvetica-Bold").text(`Report ${reportname}`, { align: "center" });
+    //iterate over each record
+    reportData.forEach((record, index) => {
+      //add a horizontal line between the records
+      if (index > 0) doc.moveTo(doc.x, doc.y - 10).lineTo(550, doc.y - 10).stroke();
       doc.moveDown();
+      //add a title for each record with underline format
       doc.text(`Record ${index + 1}:`, { underline: true });
-      doc.moveDown(); //move to the next line
+      doc.moveDown();
+      //iterate over each key-value pair in the record and add it to pdf
       Object.entries(record).forEach(([key, value]) => {
         doc.font("Helvetica").text(`${key}: ${value}`);
-        doc.font("Helvetica-Bold");
       });
       doc.moveDown();
     });
-
-    //finalize the PDF
+    //finalize the pdf 
     doc.end();
   } catch (err) {
-    console.error(`Error fetching PDF report data for ${reportname}`, err);
-    res
-      .status(500)
-      .send(
-        `Error fetching PDF report data for ${reportname}, error: ${err.message}`
-      );
+    console.error(`Error generating PDF report for ${reportname}`, err);
+    res.status(500).send(`Error generating PDF report for ${reportname}: ${err.message}`);
   }
 }
 
 //handler for XML reports
-async function handleXmlReport(reportname, queryParams, res) {
+async function handleXmlReport(reportname, reportData, res) {
   try {
-    const { runReport } = require(`./routes/${reportname}`);
-    const jsonData = await runReport(queryParams);
-    const root = create({ version: "1.0" }).ele(reportname); //create a single root element
-    //add child elements for each record
-    jsonData.forEach((record, index) => {
-      const recordElement = root.ele(`record_${index}`); //use prefix for element names
-      //assuming each record is represented as key-value pairs in the json
+    //create the XML structure
+    const root = create({ version: "1.0" }).ele(reportname);
+    reportData.forEach((record, index) => {
+      const recordElement = root.ele(`record_${index}`);
       Object.entries(record).forEach(([key, value]) => {
-        const xmlKey = key.replace(/^\d/, "_$&"); //add underscore prefix if key starts with a digit
+        const xmlKey = key.replace(/^\d/, "_$&");
         if (typeof value === "object" && value !== null) {
-          //if value is an object, recursively create child elements
           Object.entries(value).forEach(([subKey, subValue]) => {
             const subXmlKey = subKey.replace(/^\d/, "_$&");
             recordElement.ele(subXmlKey).txt(subValue);
           });
         } else {
-          //if value is not an object, create a text node
           recordElement.ele(xmlKey).txt(value);
         }
       });
     });
     const xmlData = root.end({ prettyPrint: true });
-    const filename = `${reportname}.xml`;
-    const xmlPath = path.join(__dirname, "xml", filename);
-    fs.writeFileSync(xmlPath, xmlData); //write xml data to file
+    //define file paths
+    const xmlDir = path.join(__dirname, "xml");
+    const pdfDir = path.join(__dirname, "pdf");
+    const xmlFilePath = path.join(xmlDir, `${reportname}.xml`);
+    const pdfFilePath = path.join(pdfDir, `${reportname}.pdf`);
+    const xslFilePath = path.join(__dirname, "styles", "report-style.xsl");
+    const fopCmdPath = path.join(__dirname, "fop/fop", "fop.cmd");
 
-    const fopPath = path.join(__dirname, "fop/fop", "fop.cmd");
-    const pdfPath = path.join(__dirname, "pdf", reportname + ".pdf");
-    const xslPath = path.join(__dirname, "styles", "report-style.xsl");
-    const cmd = `${fopPath} -xml ${xmlPath} -xsl ${xslPath} -pdf ${pdfPath}`; // Fop command
-
-    //execute fop cmd
+    //ensure directories exist
+    if (!fs.existsSync(xmlDir)) fs.mkdirSync(xmlDir);
+    if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir);
+    //write the xml data to a file
+    fs.writeFileSync(xmlFilePath, xmlData);
+    //cmd to convert xml to pdf using apache fop
+    const cmd = `${fopCmdPath} -xml ${xmlFilePath} -xsl ${xslFilePath} -pdf ${pdfFilePath}`;
+    //execute the command
     exec(cmd, (error, stdout, stderr) => {
       if (error) {
         console.error(`Error executing Apache FOP: ${error}`);
-        res.status(500).send(`Error executing Apache FOP: ${error}`);
+        res.status(500).send(`Error executing Apache FOP: ${error.message}`);
         return;
       }
-      console.log(`PDF generated successfully for ${reportname}`);
-      const pdfPath = path.join(__dirname, "pdf", reportname + ".pdf");
-      res.download(pdfPath); //send pdf file as response
+      //send the generated pdf file as the response
+      res.download(pdfFilePath, `${reportname}.pdf`, (err) => {
+        if (err) {
+          console.error(`Error sending PDF file: ${err}`);
+          res.status(500).send(`Error sending PDF file: ${err.message}`);
+        }
+        // pptionally, clean up the xml and pdf files after sending
+        fs.unlinkSync(xmlFilePath);
+        fs.unlinkSync(pdfFilePath);
+      });
     });
   } catch (err) {
-    console.error(`error fetching report data for ${reportname}`, err);
-    res
-      .status(500)
-      .send(
-        `error fetching report data for ${reportname}, error: ${err.message}`
-      );
+    console.error(`Error handling XML report for ${reportname}:`, err);
+    res.status(500).send(`Error handling XML report for ${reportname}: ${err.message}`);
   }
 }
 
