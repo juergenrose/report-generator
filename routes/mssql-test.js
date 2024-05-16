@@ -14,6 +14,10 @@ async function runQuery(params) {
         query: "SELECT * FROM Messwerte WHERE Sollwert = @sollwert",
         params: { sollwert: params.sollwert },//param for the second query
       },
+      {
+        query: "SELECT * FROM Standort WHERE Werksnummer = @werksnummer",
+        params: { werksnummer: params.werksnummer },//param for the third query
+      },
     ];
     //execute all predefined querries asynchron and in parallel
     const results = await Promise.all(
