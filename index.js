@@ -41,7 +41,6 @@ app.get("/report/:reportname", async (req, res) => {
     if (typeof runReport !== "function") {
       throw new Error(`runReport function not found in ${reportname}.js`);
     }
-
     const reportData = await runReport(queryParams);
     //check if a specific format is req. and handle accordingly
     if (format) {
@@ -120,6 +119,7 @@ async function handlePdfReport(reportname, reportData, res) {
     });
     //finalize the pdf 
     doc.end();
+    res.status(200).send("PDF report generated successfully witch PDFKit.");
   } catch (err) {
     console.error(`Error generating PDF report for ${reportname}`, err);
     res.status(500).send(`Error generating PDF report for ${reportname}: ${err.message}`);
@@ -168,8 +168,6 @@ async function handleXmlReport(reportname, reportData, res) {
         res.status(500).send(`Error executing Apache FOP: ${error.message}`);
         return;
       }
-      res.status(200).send("PDF report generated successfully.");
-
     });
   } catch (err) {
     console.error(`Error handling XML report for ${reportname}:`, err);
