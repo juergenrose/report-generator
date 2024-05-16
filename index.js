@@ -168,16 +168,8 @@ async function handleXmlReport(reportname, reportData, res) {
         res.status(500).send(`Error executing Apache FOP: ${error.message}`);
         return;
       }
-      //send the generated pdf file as the response
-      res.download(pdfFilePath, `${reportname}.pdf`, (err) => {
-        if (err) {
-          console.error(`Error sending PDF file: ${err}`);
-          res.status(500).send(`Error sending PDF file: ${err.message}`);
-        }
-        // pptionally, clean up the xml and pdf files after sending
-        fs.unlinkSync(xmlFilePath);
-        fs.unlinkSync(pdfFilePath);
-      });
+      res.status(200).send("PDF report generated successfully.");
+
     });
   } catch (err) {
     console.error(`Error handling XML report for ${reportname}:`, err);
