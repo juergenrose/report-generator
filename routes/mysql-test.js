@@ -4,23 +4,31 @@ async function runQuery(params) {
   try {
     //predefined queries
     const predefinedQueries = [
-      "SELECT * FROM country WHERE Continent = ?",
-      "SELECT * FROM countrylanguage WHERE Language = ?",
-      "SELECT * FROM city WHERE Name = ?"
+      `SELECT 
+      city.CountryCode,
+      GROUP_CONCAT(DISTINCT city.Name SEPARATOR ', ') AS Cities,
+      GROUP_CONCAT(DISTINCT countrylanguage.Language SEPARATOR ', ') AS Languages
+      FROM 
+          city
+      INNER JOIN 
+          countrylanguage 
+      ON 
+          city.CountryCode = countrylanguage.CountryCode
+      WHERE 
+          city.CountryCode = 'AUT'
+      GROUP BY 
+          city.CountryCode; `,
     ];
-    //execute both queries asynchon
-    const results = await Promise.all([
-      db.query(predefinedQueries[0], [params.continent]),
-      db.query(predefinedQueries[1], [params.language]),
-      db.query(predefinedQueries[2], [params.name])
-    ]);
+    console.log("Params:", params);
+    //execute all queries asynchon
+    const results = await db.query(predefinedQueries[0], [params.countrycode]);
     //combine and flatten the result rows from all queries into a single array
-    const combinedRows = results.flatMap(([rows]) => rows);
+    const combinedRows = results[0];
     //return the combined result rows
     return combinedRows;
     //error handling
   } catch (err) {
-    console.error(err);
+    console.error("MySQL Error:", err.sqlMessage);
     const error = {
       data: null,
       error: {
@@ -37,15 +45,14 @@ async function runQuery(params) {
 
 //take runQuery and runs report function
 async function runReport(params) {
-    try {
-      const result = await runQuery(params);
-      return result;
-      //error handling
-    } catch (err) {
-      console.error(err);
-      return { data: null, error: err.message };
-    }
+  try {
+    const result = await runQuery(params);
+    return result;
+    //error handling
+  } catch (err) {
+    console.error(err);
+    return { data: null, error: err.message };
   }
-
+}
 
 module.exports = { runQuery, runReport };
