@@ -1,63 +1,80 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
-  xmlns:fo="http://www.w3.org/1999/XSL/Format">
+  xmlns:fo="http://www.w3.org/1999/XSL/Format"
+  xmlns:date="http://exslt.org/dates-and-times">
 
-  <!-- Define the output as XSL-FO -->
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes"/>
+  <xsl:namespace-alias stylesheet-prefix="date" result-prefix="date" />
 
-  <!-- Root template: Start of XSL-FO document -->
   <xsl:template match="/">
     <fo:root>
       <fo:layout-master-set>
-        <!-- Define a simple page master -->
-        <fo:simple-page-master master-name="simple-page" page-width="8.5in" page-height="11in">
-          <fo:region-body margin="1in"/>
+        <fo:simple-page-master master-name="report-pdf" page-width="210mm" page-height="297mm">
+          <fo:region-body margin="15mm"/>
         </fo:simple-page-master>
       </fo:layout-master-set>
-      <fo:page-sequence master-reference="simple-page">
+      <fo:page-sequence master-reference="report-pdf">
         <fo:flow flow-name="xsl-region-body">
-          <!-- Title of the Report -->
-          <fo:block font-size="18pt" font-weight="bold" text-align="center" space-after="20pt">
-            <xsl:value-of select="name(/*)"/> Report
+          <fo:block space-after="5mm" border-bottom="1pt solid black" padding-bottom="10pt">
+            <fo:table width="100%">
+              <fo:table-column column-width="proportional-column-width(1)"/>
+              <fo:table-column column-width="proportional-column-width(1)"/>
+              <fo:table-column column-width="proportional-column-width(1)"/>
+              <fo:table-body>
+                <fo:table-row>
+                  <fo:table-cell>
+                    <fo:block font-size="10pt" font-weight="bold" text-align="left">
+                      Report:
+                      <xsl:value-of select="name(/*)"/>
+                    </fo:block>
+                  </fo:table-cell>
+                  <fo:table-cell>
+                    <fo:block font-size="10pt" font-weight="bold" text-align="center">
+                      Created on:
+                      <xsl:value-of select="date:date-time()"/>
+                    </fo:block>
+                  </fo:table-cell>
+                  <fo:table-cell>
+                    <fo:block text-align="right">
+                      <fo:external-graphic src="logo.png" content-width="30mm"/>
+                    </fo:block>
+                  </fo:table-cell>
+                </fo:table-row>
+              </fo:table-body>
+            </fo:table>
           </fo:block>
-          <!-- Content goes here -->
-          <fo:block>
-            <!-- Apply templates to process the root element dynamically -->
-            <xsl:apply-templates/>
-          </fo:block>
+          <fo:table>
+            <fo:table-body>
+              <xsl:apply-templates/>
+            </fo:table-body>
+          </fo:table>
         </fo:flow>
       </fo:page-sequence>
     </fo:root>
   </xsl:template>
 
-  <!-- Template to process the root element dynamically -->
   <xsl:template match="/*">
-    <!-- Create a block for the root element -->
-    <fo:block>
-      <!-- Apply templates to process its children -->
-      <xsl:apply-templates/>
-    </fo:block>
+    <xsl:apply-templates/>
   </xsl:template>
 
-  <!-- Template to process each record -->
   <xsl:template match="*[starts-with(name(), 'record_')]">
-    <!-- Create a block for each record -->
-    <fo:block space-after="12pt" border-bottom="1pt solid black" padding-bottom="10pt">
-      <fo:block font-size="12pt" font-weight="bold">
-        <xsl:value-of select="concat('Record ', substring-after(name(), 'record_'))"/>
-      </fo:block>
-      <xsl:apply-templates/>
-    </fo:block>
+    <fo:table-row>
+      <fo:table-cell>
+        <fo:block margin-top="5mm" border="1pt solid #ccc" padding="5mm">
+          <xsl:apply-templates/>
+        </fo:block>
+      </fo:table-cell>
+    </fo:table-row>
   </xsl:template>
 
-  <!-- Template to process each element inside a record -->
   <xsl:template match="*">
-    <!-- Output the element name and text content -->
-    <fo:block space-after="6pt">
-      <fo:inline font-weight="bold">
+    <fo:block margin="5mm" text-align="left">
+      <fo:block font-weight="bold" font-size="10pt">
         <xsl:value-of select="concat(name(), ': ')"/>
-      </fo:inline>
-      <xsl:value-of select="."/>
+      </fo:block>
+      <fo:block margin-top="2mm"  font-size="10pt">
+        <xsl:value-of select="."/>
+      </fo:block>
     </fo:block>
   </xsl:template>
 
