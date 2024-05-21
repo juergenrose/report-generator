@@ -9,10 +9,9 @@ const path = require("path");
 const { exec } = require("child_process");
 const jsonCsv = require("json2csv");
 const { create } = require("xmlbuilder2");
-const PDFDocument = require("pdfkit");
 
 app.get("/report", (req, res) => {
-  res.send("now you can search for a report");
+  res.send("App is running, now you can search for a report");
 });
 
 
@@ -45,13 +44,10 @@ app.get("/report/:reportname", async (req, res) => {
     //check if a specific format is req. and handle accordingly
     if (format) {
       switch (format) {
-        case "pdf":
-          await handlePdfReport(reportname, reportData, res);
-          break;
         case "csv":
           await handleCsvReport(reportname, reportData, res);
           break;
-        case "xml":
+        case "pdf":
           await handleXmlReport(reportname, reportData, res);
           break;
         default:
@@ -86,46 +82,7 @@ async function handleCsvReport(reportname, reportData, res) {
   }
 }
 
-
-//handler for pdf reports
-async function handlePdfReport(reportname, reportData, res) {
-  const pdfDir = path.join(__dirname, "pdf");
-  try {
-    const pdfFilePath = path.join(pdfDir, `${reportname}.pdf`);
-    //create new pdf document
-    const doc = new PDFDocument();
-    doc.pipe(fs.createWriteStream(pdfFilePath)); // Pipe PDF output to file
-    //set headers
-    res.setHeader("Content-Type", "application/pdf");
-    res.setHeader("Content-Disposition", `attachment; filename=${reportname}.pdf`);
-    //pipe the pdf doc to the response
-    doc.pipe(res);
-
-    //add title (bold and center)
-    doc.font("Helvetica-Bold").text(`Report ${reportname}`, { align: "center" });
-    //iterate over each record
-    reportData.forEach((record, index) => {
-      //add a horizontal line between the records
-      if (index > 0) doc.moveTo(doc.x, doc.y - 10).lineTo(550, doc.y - 10).stroke();
-      doc.moveDown();
-      //add a title for each record with underline format
-      doc.text(`Record ${index + 1}:`, { underline: true });
-      doc.moveDown();
-      //iterate over each key-value pair in the record and add it to pdf
-      Object.entries(record).forEach(([key, value]) => {
-        doc.font("Helvetica").text(`${key}: ${value}`);
-      });
-      doc.moveDown();
-    });
-    //finalize the pdf 
-    doc.end();
-  } catch (err) {
-    console.error(`Error generating PDF report for ${reportname}`, err);
-    res.status(500).send(`Error generating PDF report for ${reportname}: ${err.message}`);
-  }
-}
-
-//handler for XML reports
+//handler for XML/PDF reports
 async function handleXmlReport(reportname, reportData, res) {
   try {
     //create the XML structure
@@ -155,11 +112,11 @@ async function handleXmlReport(reportname, reportData, res) {
 
     //ensure directories exist
     if (!fs.existsSync(xmlDir)) fs.mkdirSync(xmlDir);
-    if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir);
+    if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir);    
     //write the xml data to a file
     fs.writeFileSync(xmlFilePath, xmlData);
     //cmd to convert xml to pdf using apache fop
-    const cmd = `${fopCmdPath} -xml ${xmlFilePath} -xsl ${xslFilePath} -pdf ${pdfFilePath}`;
+    const cmd = `${fopCmdPath} -xml ${xmlFilePath} -xsl ${xslFilePath} -pdf ${pdfFilePath}`;    
     //execute the command
     exec(cmd, (error, stdout, stderr) => {
       if (error) {
@@ -167,12 +124,16 @@ async function handleXmlReport(reportname, reportData, res) {
         res.status(500).send(`Error executing Apache FOP: ${error.message}`);
         return;
       }
+      res.setHeader("Content-disposition", `attachment; filename=${reportname}.pdf`);
+      res.set("Content-Type", "application/pdf");
+      res.status(200).sendFile(pdfFilePath);
     });
   } catch (err) {
     console.error(`Error handling XML report for ${reportname}:`, err);
     res.status(500).send(`Error handling XML report for ${reportname}: ${err.message}`);
   }
 }
+
 
 //port listening
 app.listen(port, () => {
