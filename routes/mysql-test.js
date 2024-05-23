@@ -15,7 +15,7 @@ async function runQuery(params) {
       ON 
           city.CountryCode = countrylanguage.CountryCode
       WHERE 
-          city.CountryCode = 'AUT'
+        city.CountryCode = ?
       GROUP BY 
           city.CountryCode; `,
     ];

@@ -12,7 +12,7 @@ async function runQuery(params) {
       },
       {
         query: "SELECT * FROM Messwerte WHERE Sollwert = @sollwert",
-        params: { sollwert: params.sollwert },//param for the second query
+        params: { sollwert: params.sollwert, istwert: params.istwert},//param for the second query
       },
       {
         query: "SELECT * FROM Standort WHERE Werksnummer = @werksnummer",
