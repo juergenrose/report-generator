@@ -122,7 +122,7 @@ async function handleXmlReport(reportname, reportData, res) {
     //write the xml data to a file
     fs.writeFileSync(xmlFilePath, xmlData);
     //cmd to convert xml to pdf using apache fop
-    const cmd = `${fopCmdPath} -xml ${xmlFilePath} -xsl ${xslFilePath} -pdf ${pdfFilePath} -param countryCode ${reportData[0].CountryCode}`;
+    const cmd = `${fopCmdPath} -xml ${xmlFilePath} -xsl ${xslFilePath} -pdf ${pdfFilePath} -param Code ${reportData[0].Code}`;
  
     //execute the command
     exec(cmd, (error, stdout, stderr) => {

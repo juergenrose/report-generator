@@ -5,19 +5,20 @@ async function runQuery(params) {
     //predefined queries
     const predefinedQueries = [
       `SELECT 
-      city.CountryCode,
+      city.CountryCode AS Code,
+      country.Name AS Country,
       GROUP_CONCAT(DISTINCT city.Name SEPARATOR ', ') AS Cities,
       GROUP_CONCAT(DISTINCT countrylanguage.Language SEPARATOR ', ') AS Languages
       FROM 
           city
+          INNER JOIN 
+          country ON city.CountryCode = country.Code
       INNER JOIN 
-          countrylanguage 
-      ON 
-          city.CountryCode = countrylanguage.CountryCode
+          countrylanguage ON city.CountryCode = countrylanguage.CountryCode
       WHERE 
-        city.CountryCode = ?
+          city.CountryCode = ?
       GROUP BY 
-          city.CountryCode; `,
+          city.CountryCode, country.Name;`,
     ];
     console.log("Params:", params);
     //execute all queries asynchon

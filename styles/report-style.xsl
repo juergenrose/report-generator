@@ -1,11 +1,10 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:fo="http://www.w3.org/1999/XSL/Format"
-  xmlns:date="http://exslt.org/dates-and-times"
-  xmlns:json="http://json.org">
+  xmlns:date="http://exslt.org/dates-and-times">
 
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes"/>
   <xsl:namespace-alias stylesheet-prefix="date" result-prefix="date" />
-  <xsl:param name="countryCode"/>
+  <xsl:param name="Code"/>
 
   <!-- Main template to generate the PDF -->
   <xsl:template match="/">
@@ -69,10 +68,10 @@
         <!-- Block to display the flag image above the data -->
         <fo:block>
           <!-- Use the flag image URL passed as a parameter -->
-          <xsl:variable name="flagUrl" select="document('countryFlags.xml')/flags/*[name()=$countryCode]"/>
+          <xsl:variable name="flagUrl" select="document('countryFlags.xml')/flags/*[name()=$Code]"/>
           <!-- Display the image using the retrieved URL -->
           <fo:block text-align="end" space-after="10pt">
-            <fo:external-graphic src="{$flagUrl}" content-width="20mm"/>
+            <fo:external-graphic src="{$flagUrl}" content-width="15mm"/>
           </fo:block>
           <!-- Block to display the data below the flag image -->
           <fo:block>
