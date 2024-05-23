@@ -87,13 +87,19 @@ async function handleXmlReport(reportname, reportData, res) {
   try {
     //create the XML structure
     const root = create({ version: "1.0" }).ele(reportname);
+
     reportData.forEach((record, index) => {
       const recordElement = root.ele(`record_${index}`);
+      //iterate over each key-value pair in the 'record' object
       Object.entries(record).forEach(([key, value]) => {
         const xmlKey = key.replace(/^\d/, "_$&");
+        //check if the value is an object and not null
         if (typeof value === "object" && value !== null) {
+          //iterate over each key-value pair in the nested 'value' object
           Object.entries(value).forEach(([subKey, subValue]) => {
             const subXmlKey = subKey.replace(/^\d/, "_$&");
+            /*create a new xml element with the subXmlKey name under the recordElement
+            and set subValue as the text content of this element */
             recordElement.ele(subXmlKey).txt(subValue);
           });
         } else {
@@ -116,7 +122,8 @@ async function handleXmlReport(reportname, reportData, res) {
     //write the xml data to a file
     fs.writeFileSync(xmlFilePath, xmlData);
     //cmd to convert xml to pdf using apache fop
-    const cmd = `${fopCmdPath} -xml ${xmlFilePath} -xsl ${xslFilePath} -pdf ${pdfFilePath}`;    
+    const cmd = `${fopCmdPath} -xml ${xmlFilePath} -xsl ${xslFilePath} -pdf ${pdfFilePath} -param countryCode ${reportData[0].CountryCode}`;
+ 
     //execute the command
     exec(cmd, (error, stdout, stderr) => {
       if (error) {
@@ -133,8 +140,6 @@ async function handleXmlReport(reportname, reportData, res) {
     res.status(500).send(`Error handling XML report for ${reportname}: ${err.message}`);
   }
 }
-
-
 //port listening
 app.listen(port, () => {
   console.log(`Server started, visit http://localhost:${port}/report`);
