@@ -110,13 +110,17 @@ async function handleCsvReport(reportname, reportData, res) {
   }
 }
 
+
 //handler for XML/PDF reports
 async function handleXmlReport(reportname, reportData, res) {
   try {
+    if (!Array.isArray(reportData.data)) {
+      throw new Error("Report data is not an array");
+    }
     //create the XML structure
     const root = create({ version: "1.0" }).ele(reportname);
 
-    reportData.forEach((record, index) => {
+    reportData.data.forEach((record, index) => {
       const recordElement = root.ele(`record_${index}`);
       //iterate over each key-value pair in the 'record' object
       Object.entries(record).forEach(([key, value]) => {
@@ -146,12 +150,12 @@ async function handleXmlReport(reportname, reportData, res) {
 
     //ensure directories exist
     if (!fs.existsSync(xmlDir)) fs.mkdirSync(xmlDir);
-    if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir);    
+    if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir);
     //write the xml data to a file
     fs.writeFileSync(xmlFilePath, xmlData);
     //cmd to convert xml to pdf using apache fop
-    const cmd = `${fopCmdPath} -xml ${xmlFilePath} -xsl ${xslFilePath} -pdf ${pdfFilePath} -param Code ${reportData[0].Code}`;
- 
+    const cmd = `${fopCmdPath} -xml ${xmlFilePath} -xsl ${xslFilePath} -pdf ${pdfFilePath} -param Code ${reportData.data[0].Code}`;
+
     //execute the command
     exec(cmd, (error, stdout, stderr) => {
       if (error) {
@@ -168,6 +172,8 @@ async function handleXmlReport(reportname, reportData, res) {
     res.status(500).send(`Error handling XML report for ${reportname}: ${err.message}`);
   }
 }
+
+
 //port listening
 app.listen(port, () => {
   console.log(`Server started, visit http://localhost:${port}/report`);
