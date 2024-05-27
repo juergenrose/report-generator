@@ -83,13 +83,13 @@
   </xsl:template>
   <!-- Template to match any other elements -->
   <xsl:template match="*">
-    <fo:block margin="5mm" text-align="left">
-      <fo:block font-weight="bold" font-size="10pt">
+    <fo:block margin="4mm" text-align="left">
+      <fo:inline font-weight="bold" font-size="10pt">
         <xsl:value-of select="concat(name(), ': ')"/>
-      </fo:block>
-      <fo:block margin-top="2mm" font-size="10pt">
+      </fo:inline>
+      <fo:inline margin-top="2mm" font-size="10pt">
         <xsl:value-of select="."/>
-      </fo:block>
+      </fo:inline>
     </fo:block>
   </xsl:template>
 
