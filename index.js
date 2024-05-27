@@ -10,8 +10,22 @@ const { exec } = require("child_process");
 const jsonCsv = require("json2csv");
 const { create } = require("xmlbuilder2");
 
-app.get("/report", (req, res) => {
-  res.send("App is running, now you can search for a report");
+app.use(express.static(__dirname + "/public"));
+
+//shows all reports in the routes folder
+app.get("/report", async (req, res) => {
+  try {
+    const reportsDirectory = path.join(__dirname, "routes");
+    const files = await fsPromise.readdir(reportsDirectory);
+    //filter the files to include only js files
+    const reportFiles = files.filter(file => file.endsWith('.js'));
+    //remove the .js extension to get the report names
+    const reportNames = reportFiles.map(file => path.basename(file, '.js'));
+    res.json({ reports: reportNames });
+  } catch (err) {
+    console.error('Error listing reports:', err);
+    res.status(500).send('Error listing reports');
+  }
 });
 
 
@@ -30,46 +44,60 @@ const parseQuery = (queryParams) => {
 app.get("/report/:reportname", async (req, res) => {
   try {
     const { reportname } = req.params;
-    //parse the query params and determine the format (if any)
-    const { value: queryParams, format } = parseQuery(req.query);
+    const queryParams = req.query;
 
     const filePath = path.join(__dirname, "routes", `${reportname}.js`);
     await fsPromise.access(filePath); // Check if file exists
 
-    const { runReport } = require(filePath);
-    if (typeof runReport !== "function") {
-      throw new Error(`runReport function not found in ${reportname}.js`);
-    }
-    const reportData = await runReport(queryParams);
-    //check if a specific format is req. and handle accordingly
-    if (format) {
-      switch (format) {
-        case "csv":
-          await handleCsvReport(reportname, reportData, res);
-          break;
-        case "pdf":
-          await handleXmlReport(reportname, reportData, res);
-          break;
-        default:
-          res.status(400).send("Invalid format specified.");
+    const { runReport, getQueryParams } = require(filePath);
+
+    //check if the request has query parameters
+    if (Object.keys(queryParams).length === 0) {
+      //no query parameters, return the parameters for the report
+      if (typeof getQueryParams !== "function") {
+        throw new Error(`getQueryParams function not found in ${reportname}.js`);
       }
+      const parameters = getQueryParams();
+      res.json({ reportname, parameters });
     } else {
-      //if no format is specified , send report as json
-      res.json(reportData);
+      //parse the query params and determine the format (if any)
+      const { value: parsedQueryParams, format } = parseQuery(queryParams);
+
+      if (typeof runReport !== "function") {
+        throw new Error(`runReport function not found in ${reportname}.js`);
+      }
+      const reportData = await runReport(parsedQueryParams);
+      //check if a specific format is requested and handle accordingly
+      if (format) {
+        switch (format) {
+          case "csv":
+            await handleCsvReport(reportname, reportData, res);
+            break;
+          case "pdf":
+            await handleXmlReport(reportname, reportData, res);
+            break;
+          default:
+            res.status(400).send("Invalid format specified.");
+        }
+      } else {
+        //if no format is specified, send report as JSON
+        res.json(reportData);
+      }
     }
   } catch (err) {
-    console.error(`Error running report ${reportname}:`, err);
-    res.status(500).send(`Error running report ${reportname}: ${err.message}`);
+    console.error(`Error handling report ${reportname}:`, err);
+    res.status(500).send(`Error handling report ${reportname}: ${err.message}`);
   }
 });
+
 
 // handler for csv reports
 async function handleCsvReport(reportname, reportData, res) {
   const csvDir = path.join(__dirname, "csv");
   try {
-    const csvData = jsonCsv.parse(reportData); // Convert JSON data to CSV
+    const csvData = jsonCsv.parse(reportData); //convert JSON data to CSV
     const csvFilePath = path.join(csvDir, `${reportname}.csv`);
-    await fsPromise.writeFile(csvFilePath, csvData); // Write CSV data to file
+    await fsPromise.writeFile(csvFilePath, csvData); //write CSV data to file
 
     //set header
     res.setHeader("Content-disposition", `attachment; filename=${reportname}.csv`);
