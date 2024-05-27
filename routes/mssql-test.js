@@ -1,56 +1,87 @@
 const config = require("../config/mssql_db");
 const sql = require("mssql");
 
+//predefined queries
+const predefinedQueries = [
+  {
+    query: "SELECT * FROM Kontrolle WHERE durchfuehrender = @name",
+  },
+  {
+    query: "SELECT * FROM Hersteller WHERE hersteller = @hersteller",
+  }
+];
+
 async function runQuery(params) {
   try {
     const pool = await sql.connect(config);
-    //define an array of predefined queries along with their respectiuve params 
-    const predefinedQueries = [
-      {
-        query: "SELECT * FROM MMTeilnehmer WHERE Vorname = @vorname",
-        params: { vorname: params.vorname }, //param for the first query
-      },
-      {
-        query: "SELECT * FROM Messwerte WHERE Sollwert = @sollwert",
-        params: { sollwert: params.sollwert, istwert: params.istwert},//param for the second query
-      },
-      {
-        query: "SELECT * FROM Standort WHERE Werksnummer = @werksnummer",
-        params: { werksnummer: params.werksnummer },//param for the third query
-      },
-    ];
-    //execute all predefined querries asynchron and in parallel
+    //execute all predefined queries asynchronously and in parallel
     const results = await Promise.all(
-      predefinedQueries.map(({ query, params }) => {
+      predefinedQueries.map(({ query }) => {
         const request = pool.request();//create a new req instance for each query
-        //bind params to the req
+        //bind params to the request from the params passed to runQuery
         for (const [key, value] of Object.entries(params)) {
           request.input(key, value);
         }
-        //execute the query and return the result promise 
         return request.query(query);
       })
     );
-    //extract record sets from the results of each query
     const recordSets = results.map((result) => result.recordset);
-    //flattern the array of record sets into a single array of records
     return recordSets.flat();
-    //error handling
   } catch (err) {
     console.error(err);
     throw new Error(err.message);
   }
 }
 
+
+//function to extract query parameters
+function extractQueryParams(query) {
+  const params = {};
+  const regex = /@(\w+)/g;
+  let match;
+  while ((match = regex.exec(query)) !== null) {
+    const paramName = match[1];
+    params[paramName] = {
+      type: 'string', // assuming all params are strings for simplicity
+      required: true
+    };
+  }
+  return params;
+}
+
+
+//function to extract and return query parameters
+function getQueryParams() {
+  const params = {};
+  predefinedQueries.forEach(({ query }) => {
+    Object.assign(params, extractQueryParams(query));
+  });
+  return params;
+}
+
+
+//function to run the report based on provided parameters
 async function runReport(params) {
   try {
+    // Extract query parameters
+    const queryParams = getQueryParams();
+    // Validate if the required parameters are present in the request
+    const missingParams = Object.keys(queryParams).filter(
+      paramName => queryParams[paramName].required && !params[paramName]
+    );
+    //if there are missing required parameters, throw an error
+    if (missingParams.length > 0) {
+      throw new Error(`Missing required parameters: ${missingParams.join(', ')}`);
+    }
+    // Run the query with the correct parameters
     const result = await runQuery(params);
-    return result;
-    //error handling
+
+    return { data: result, parameters: queryParams };
   } catch (err) {
     console.error(err);
     return { data: null, error: err.message };
   }
 }
 
-module.exports = { runQuery, runReport };
+
+module.exports = { runQuery, runReport, getQueryParams };

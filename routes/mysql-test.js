@@ -2,32 +2,38 @@ const db = require("../config/mysql_db").promise();
 
 //predefined queries
 const predefinedQueries = [
-  `SELECT 
-  city.CountryCode AS Code,
-  country.Name AS Country,
-  GROUP_CONCAT(DISTINCT city.Name SEPARATOR ', ') AS Cities,
-  GROUP_CONCAT(DISTINCT countrylanguage.Language SEPARATOR ', ') AS Languages
-  FROM 
+  {
+    query: `SELECT 
+      city.CountryCode AS Code,
+      country.Name AS Country,
+      GROUP_CONCAT(DISTINCT city.Name SEPARATOR ', ') AS Cities,
+      GROUP_CONCAT(DISTINCT countrylanguage.Language SEPARATOR ', ') AS Languages
+    FROM 
       city
-      INNER JOIN 
+    INNER JOIN 
       country ON city.CountryCode = country.Code
-  INNER JOIN 
+    INNER JOIN 
       countrylanguage ON city.CountryCode = countrylanguage.CountryCode
-  WHERE 
+    WHERE 
       city.CountryCode = ?
-  GROUP BY 
+    GROUP BY 
       city.CountryCode, country.Name;`,
+    params: ['countrycode'] //specify the expected parameters
+  }
 ];
+
 
 async function runQuery(params) {
   try {
-    //execute all queries asynchon
-    const results = await db.query(predefinedQueries[0], [params.countrycode]);
-    //combine and flatten the result rows from all queries into a single array
-    const combinedRows = results[0];
+    //extract the first query and its expected parameters
+    const { query, params: queryParams } = predefinedQueries[0];
+    const queryValues = queryParams.map(param => params[param]);
+    
+    //execute the query with the provided parameters
+    const [results] = await db.query(query, queryValues);
+
     //return the combined result rows
-    return combinedRows;
-    //error handling
+    return results;
   } catch (err) {
     console.error("MySQL Error:", err.sqlMessage);
     const error = {
@@ -44,42 +50,46 @@ async function runQuery(params) {
   }
 }
 
-function extractQueryParams(query) {
-  //count the nubmer of parameter placeholders (?)
-  const paramCount = (query.match(/\?/g) || []).length;
-  const params = {};
-  //loop through each parameter placeholder in the query string
-  for (let i = 1; i <= paramCount; i++) {
-    /*create a parameter key in the format param1, param2,... 
-    and assign an object containing type, required and dessciption properties */
-    params[`param${i}`] = {
-      type: "string",
-      required: true,
-      //include a description indication the position of the parameter
-      description: `Parameter ${i} for the query`
-    };
-  }
-  return params;
-}
 
-
+//function to extract and return query parameters
 function getQueryParams() {
-  //call the extractQueryParams function with the predifined SQL query to retrieve and return the query params
-  const params = extractQueryParams(predefinedQueries[0]);
+  const params = {};
+  //iterate over each predefined query
+  predefinedQueries.forEach(({ params: queryParams }) => {
+    //iterate over each parameter in the query
+    queryParams.forEach(param => {
+      params[param] = {
+        type: 'string', //assuming all params are strings for simplicity
+        required: true
+      };
+    });
+  });
   return params;
 }
 
 
-//take runQuery and runs report function
+//function to run the report based on provided parameters
 async function runReport(params) {
   try {
+    //extract query parameters
+    const queryParams = getQueryParams();
+    //validate if the required parameters are present in the req
+    const missingParams = Object.keys(queryParams).filter(
+      paramName => queryParams[paramName].required && !params[paramName]
+    );
+    //if there are missing required parameters, throw an error
+    if (missingParams.length > 0) {
+      throw new Error(`Missing required parameters: ${missingParams.join(', ')}`);
+    }
+    //run the query with the correct parameters
     const result = await runQuery(params);
-    return result;
-    //error handling
+
+    return { data: result, parameters: queryParams };
   } catch (err) {
     console.error(err);
     return { data: null, error: err.message };
   }
 }
+
 
 module.exports = { runQuery, runReport, getQueryParams };
