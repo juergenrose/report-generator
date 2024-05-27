@@ -37,10 +37,12 @@ async function runQuery(params) {
 //function to extract query parameters
 function extractQueryParams(query) {
   const params = {};
-  const regex = /@(\w+)/g;
+  const regex = /@(\w+)/g;//regular expression to match parameters starting with '@'
   let match;
+  //loop through all matches of the regex in the query string
   while ((match = regex.exec(query)) !== null) {
-    const paramName = match[1];
+    const paramName = match[1];//extract the parameter name (without '@')
+    //add the parameter to the params object
     params[paramName] = {
       type: 'string', // assuming all params are strings for simplicity
       required: true
@@ -53,7 +55,9 @@ function extractQueryParams(query) {
 //function to extract and return query parameters
 function getQueryParams() {
   const params = {};
+  //iterate over each predefined query
   predefinedQueries.forEach(({ query }) => {
+    //extract parameters from the current query and merge them into the params object
     Object.assign(params, extractQueryParams(query));
   });
   return params;
