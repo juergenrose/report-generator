@@ -17,6 +17,7 @@ const { create } = require("xmlbuilder2");
 
 app.use(cors());
 
+
 //dynamically generate the list of API files
 async function getApiFiles() {
   const reportsDirectory = path.join(__dirname, "routes");
@@ -37,7 +38,8 @@ async function getApiFiles() {
   const specs = swaggerJsdoc(options);
 
   //serve Swagger UI
-  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs, { explorer: true }));
+
 
   //shows all reports in the routes folder
   app.get("/report", async (req, res) => {
