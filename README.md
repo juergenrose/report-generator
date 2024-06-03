@@ -12,6 +12,7 @@ The second way is to use pdfkit.
 
 ### Dependencies:
 ```
+cors
 dotenv
 express
 mysql2
@@ -20,6 +21,8 @@ json2csv
 pdfkit
 xmlbuilder2
 child_process
+swagger-jsdoc
+swagger-ui-express
 ```
 
 ### To install all dependencies run:
