@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- <link rel="stylesheet" href="/css/styles.css" /> -->
+    <title>Report generator</title>
+  </head>
+  <body>
+    <div class="content">
+
+      <header>
+        <nav>
+            <ul>
+                <li class="headerName">Report generator</li>
+                <li><a href="/api-docs">API documentation &#x2197;</a></li>
+            </ul>
+        </nav>
+      </header>
+
+      <main>
+        <section class="formPart">
+            <h2>All available reports</h2>
+          <!-- form for fetching parameters and downloading the report -->
+          <form id="reportForm" onsubmit="showJsonOutput(event);">
+            <!-- list all reports -->
+            <label for="reportList">Select a report:</label>
+            <select id="reportList" name="reportList" onchange="fetchParams()">
+              <!-- options will be populated dynamically -->
+            </select>
+            <br />
+            <!-- list all parameters -->
+            <h2 class="paramH2">Parameters for report</h2>
+            <div id="paramList">
+                <p>To view the parameters, please select a report first</p>
+              <!-- parameter inputs will be populated dynamically -->
+            </div>
+            <br />
+            <button class="generateBtn" type="submit">Generate</button>
+          </form>
+
+          <form id="downloadForm" onsubmit="downloadReport(event)">
+            <label for="format">Select download format</label>
+            <select name="format" id="format">
+              <option value="csv">CSV</option>
+              <option value="pdf">PDF</option>
+            </select>
+            <button class="downloadBtn" type="submit">Download</button>
+          </form>
+        </section>
+
+        <section id="jsonOutput">
+          <!-- display report data as JSON -->
+          <div id="reportData">
+            <!-- JSON data will be displayed here -->
+          </div>
+        </section>
+      </main>
+
+      <script src="/js/app.js"></script>
+    </div>
+  </body>
+</html>
