@@ -1,20 +1,28 @@
+//required modules
 const express = require("express");
 const app = express();
 const swaggerUi = require("swagger-ui-express");
 const swaggerJsdoc = require("swagger-jsdoc");
-
 const port = 3000;
 const cors = require("cors");
-
 const fs = require("fs");
 const fsPromise = require("fs").promises;
 const path = require("path");
-
 const { exec } = require("child_process");
 const jsonCsv = require("json2csv");
 const { create } = require("xmlbuilder2");
 
 app.use(cors());
+app.use(express.static('public'));
+app.set('views', path.join(__dirname, 'views'));
+app.engine('html', require('ejs').renderFile);
+app.set('view engine', 'html');
+
+
+
+app.get("/", (req, res) => {
+  res.render("index.html");
+})
 
 
 //dynamically generate the list of API files
@@ -280,7 +288,9 @@ async function handleXmlReport(reportname, reportData, res) {
 
 (async () => {
   const apiFiles = await getApiFiles();
+  //define options for Swagger JSDoc
   const options = {
+    //basic OpenAPI definition
     definition: {
       openapi: "3.0.3",
       info: {
@@ -294,14 +304,17 @@ async function handleXmlReport(reportname, reportData, res) {
         },
       ],
     },
-    apis: apiFiles.concat(__filename), // include this file for JSDoc comments
+    //include all route files for JSDoc comments
+    apis: apiFiles.concat(__filename),
   };
 
+  //generate Swagger specs from the options
   const specs = swaggerJsdoc(options);
+
   app.use(
     "/api-docs",
-    swaggerUi.serve,
-    swaggerUi.setup(specs, { explorer: true })
+    swaggerUi.serve, //middleware to serve the swagger ui
+    swaggerUi.setup(specs, { explorer: true }) //setup swagger ui with the generated specs and enable explorer
   );
 
   
