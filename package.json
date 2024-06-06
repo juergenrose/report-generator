@@ -18,6 +18,7 @@
     "mysql2": "^3.9.7",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "xmlbuilder2": "^3.1.1"
+    "xmlbuilder2": "^3.1.1",
+    "yaml": "^2.4.3"
   }
 }
