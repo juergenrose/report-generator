@@ -11,18 +11,23 @@ const path = require("path");
 const { exec } = require("child_process");
 const jsonCsv = require("json2csv");
 const { create } = require("xmlbuilder2");
+const yaml = require('yaml');
 
+
+//middleware for static files and view engine
 app.use(cors());
 app.use(express.static('public'));
 app.set('views', path.join(__dirname, 'views'));
-app.engine('html', require('ejs').renderFile);
 app.set('view engine', 'html');
 
 
-
 app.get("/", (req, res) => {
-  res.render("index.html");
+  res.sendFile(path.join(__dirname, 'views', 'index.html'));
 })
+
+app.get("/api-docs", (req, res) => {
+  res.sendFile(path.join(__dirname, "swagger.yaml"));
+});
 
 
 //dynamically generate the list of API files
@@ -32,45 +37,6 @@ async function getApiFiles() {
   const jsFiles = files.filter((file) => file.endsWith(".js"));
   return jsFiles.map((file) => path.join(reportsDirectory, file));
 }
-
-/**
- * @swagger
- * components:
- *   schemas:
- *     ReportResponse:
- *       type: object
- *       properties:
- *         reportname:
- *           type: string
- *           description: The name of the report
- *         params:
- *           type: object
- *           additionalProperties:
- *             type: string
- *           description: The query parameters used for generating the report. This object can contain any dynamic query parameters provided by the user.
- */
-
-/**
- * @swagger
- * /report:
- *   get:
- *     summary: Retrieve a list of available reports
- *     description: Returns a list of available reports in the routes folder.
- *     responses:
- *       200:
- *         description: Successful response
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 reports:
- *                   type: array
- *                   items:
- *                     type: string
- *       500:
- *         description: Internal Server Error
- */
 
 
 app.get("/report", async (req, res) => {
@@ -88,45 +54,6 @@ app.get("/report", async (req, res) => {
   }
 });
 
-
-/**
- * @swagger
- * /report/{reportname}:
- *   get:
- *     summary: Retrieve a specific report
- *     description: Retrieves the specified report, optionally in a specified format (CSV or PDF). Supports dynamic query parameters.
- *     parameters:
- *       - in: path
- *         name: reportname
- *         required: true
- *         schema:
- *           type: string
- *         description: The name of the report to retrieve
- *       - in: query
- *         name: params
- *         style: form
- *         explode: true
- *         schema:
- *           type: object
- *           additionalProperties:
- *             type: string
- *         description: Additional dynamic query parameters for the report. This object can contain any key-value pairs needed for the report generation
- *       - in: query
- *         name: format
- *         schema:
- *           type: string
- *           enum: ["csv", "pdf"]
- *         description: Optional. The format in which to retrieve the report (e.g., csv, pdf)
- *     responses:
- *       200:
- *         description: Successful response
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/ReportResponse'
- *       500:
- *         description: Internal Server Error
- */
 
 
 app.get("/report/:reportname", async (req, res) => {
@@ -286,11 +213,117 @@ async function handleXmlReport(reportname, reportData, res) {
 }
 
 
-(async () => {
+async function generateAndSaveSwaggerDocs() {
   const apiFiles = await getApiFiles();
-  //define options for Swagger JSDoc
   const options = {
-    //basic OpenAPI definition
+    definition: {
+      openapi: "3.0.3",
+      info: {
+        title: "Reporter API",
+        description: "Report API for generating and handling reports",
+        version: "1.0",
+      },
+      servers: [
+        {
+          url: "http://localhost:3000",
+        },
+      ],
+      paths: {},
+      components: {
+        schemas: {
+          ReportResponse: {
+            type: "object",
+            properties: {
+              reportname: {
+                type: "string",
+                description: "The name of the report",
+              },
+              params: {
+                type: "object",
+                additionalProperties: {
+                  type: "string",
+                },
+                description: "The query parameters used for generating the report.",
+              },
+            },
+          },
+        },
+      },
+    },
+    apis: apiFiles.concat(__filename),
+  };
+
+  apiFiles.forEach(file => {
+    const reportname = path.basename(file, ".js");
+    options.definition.paths[`/report/${reportname}`] = {
+      get: {
+        summary: `Retrieve ${reportname} report`,
+        description: `Retrieves the ${reportname} report, optionally in a specified format (CSV or PDF). Supports dynamic query parameters.`,
+        parameters: [
+          {
+            in: "path",
+            name: "reportname",
+            required: true,
+            schema: {
+              type: "string",
+            },
+            description: "The name of the report to retrieve",
+          },
+          {
+            in: "query",
+            name: "params",
+            style: "form",
+            explode: true,
+            schema: {
+              type: "object",
+              additionalProperties: {
+                type: "string",
+              },
+            },
+            description: "Additional dynamic query parameters for the report.",
+          },
+          {
+            in: "query",
+            name: "format",
+            schema: {
+              type: "string",
+              enum: ["csv", "pdf"],
+            },
+            description: "Optional. The format in which to retrieve the report (e.g., csv, pdf)",
+          },
+        ],
+        responses: {
+          '200': {
+            description: 'Successful response',
+            content: {
+              'application/json': {
+                schema: {
+                  $ref: '#/components/schemas/ReportResponse',
+                },
+              },
+            },
+          },
+          '404': {
+            description: 'Report Not Found',
+          },
+          '500': {
+            description: 'Internal Server Error',
+          },
+        },
+      },
+    };
+  });
+
+  const specs = swaggerJsdoc(options);
+  const yamlData = yaml.stringify(specs);
+  fs.writeFileSync(path.join(__dirname, 'swagger.yaml'), yamlData, 'utf8');
+}
+
+
+(async () => {
+  await generateAndSaveSwaggerDocs();
+  const apiFiles = await getApiFiles();
+  const options = {
     definition: {
       openapi: "3.0.3",
       info: {
@@ -304,12 +337,11 @@ async function handleXmlReport(reportname, reportData, res) {
         },
       ],
     },
-    //include all route files for JSDoc comments
     apis: apiFiles.concat(__filename),
   };
 
   //generate Swagger specs from the options
-  const specs = swaggerJsdoc(options);
+  const specs = generateAndSaveSwaggerDocs(options);
 
   app.use(
     "/api-docs",
@@ -320,6 +352,6 @@ async function handleXmlReport(reportname, reportData, res) {
   
   //port listening
   app.listen(port, () => {
-    console.log(`Server started, visit http://localhost:${port}/report`);
+    console.log(`Server started, visit http://localhost:${port}/`);
   });
 })();
