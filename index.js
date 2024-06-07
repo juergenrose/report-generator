@@ -197,6 +197,7 @@ async function handleXmlReport(reportname, reportData, res) {
         res.status(500).send(`Error executing Apache FOP: ${error.message}`);
         return;
       }
+      //set header
       res.setHeader(
         "Content-disposition",
         `attachment; filename=${reportname}.pdf`
@@ -214,7 +215,9 @@ async function handleXmlReport(reportname, reportData, res) {
 
 
 async function generateAndSaveSwaggerDocs() {
+  // Retrieve list of API files
   const apiFiles = await getApiFiles();
+  //define Swagger options
   const options = {
     definition: {
       openapi: "3.0.3",
@@ -228,7 +231,7 @@ async function generateAndSaveSwaggerDocs() {
           url: "http://localhost:3000",
         },
       ],
-      paths: {},
+      paths: {},//initialize paths object for API endpoints
       components: {
         schemas: {
           ReportResponse: {
@@ -250,15 +253,19 @@ async function generateAndSaveSwaggerDocs() {
         },
       },
     },
+    //include all api files for swagger generation
     apis: apiFiles.concat(__filename),
   };
-
+  //iterate over each API file to dynamically generate swagger paths
   apiFiles.forEach(file => {
     const reportname = path.basename(file, ".js");
+    //define swagger path for retrieving a specific report
     options.definition.paths[`/report/${reportname}`] = {
       get: {
+        //summary and description of the API endpoint
         summary: `Retrieve ${reportname} report`,
         description: `Retrieves the ${reportname} report, optionally in a specified format (CSV or PDF). Supports dynamic query parameters.`,
+        //define path and query parameters
         parameters: [
           {
             in: "path",
@@ -292,13 +299,14 @@ async function generateAndSaveSwaggerDocs() {
             description: "Optional. The format in which to retrieve the report (e.g., csv, pdf)",
           },
         ],
+        //define possible responses
         responses: {
           '200': {
             description: 'Successful response',
             content: {
               'application/json': {
                 schema: {
-                  $ref: '#/components/schemas/ReportResponse',
+                  $ref: '#/components/schemas/ReportResponse', //reference to the ReportResponse schema
                 },
               },
             },
@@ -313,16 +321,20 @@ async function generateAndSaveSwaggerDocs() {
       },
     };
   });
-
+  //generate swagger documentation using swaggerJsdoc library
   const specs = swaggerJsdoc(options);
+  //convert swagger specs to yaml format
   const yamlData = yaml.stringify(specs);
+  //write yaml data to a file named 'swagger.yaml' in the current directory
   fs.writeFileSync(path.join(__dirname, 'swagger.yaml'), yamlData, 'utf8');
 }
 
 
 (async () => {
+    //generate and save swagger documentation
   await generateAndSaveSwaggerDocs();
   const apiFiles = await getApiFiles();
+  //swagger options
   const options = {
     definition: {
       openapi: "3.0.3",
@@ -337,11 +349,12 @@ async function generateAndSaveSwaggerDocs() {
         },
       ],
     },
+    //include all api files
     apis: apiFiles.concat(__filename),
   };
-
   //generate Swagger specs from the options
   const specs = generateAndSaveSwaggerDocs(options);
+
 
   app.use(
     "/api-docs",
