@@ -18,8 +18,7 @@
           </ul>
         </nav>
       </header>
-
-      <main>
+      <main class="mainContainer">
         <section class="formPart">
           <h2>All available reports</h2>
           <!-- form for fetching parameters and downloading the report -->
@@ -39,21 +38,38 @@
             <br />
             <button class="generateBtn" type="submit">Generate</button>
           </form>
-
-          <form id="downloadForm" onsubmit="downloadReport(event)">
+          <form id="convertForm" onsubmit="convert(event)">
             <select name="format" id="format">
               <option value="">-- select format --</option>
               <option value="csv">CSV</option>
               <option value="pdf">PDF</option>
             </select>
-            <button class="downloadBtn" type="submit">Download</button>
+            <button class="convertBtn" type="submit">Convert</button>
           </form>
         </section>
 
-        <section id="jsonOutput">
-          <!-- display report data as JSON -->
-          <div id="reportData">
-            <!-- JSON data will be displayed here -->
+        <section class="rightContainer">
+          <div class="tabs">
+            <a class="tablinks" onclick="openTab(event, 'jsonOutput')">JSON</a>
+            <a class="tablinks" onclick="openTab(event, 'csvOutput')">CSV</a>
+            <a class="tablinks" onclick="openTab(event, 'pdfOutput')">PDF</a>
+            <form id="downloadForm" onsubmit="downloadReport(event)">
+              <button class="downloadBtn" type="submit">Download</button>
+            </form>
+          </div>
+          <div id="jsonOutput" class="tabcontent">
+            <div id="reportData">
+              <!-- JSON data will be displayed here -->
+            </div>
+          </div>
+          <div id="csvOutput" class="tabcontent">
+            <div id="csvData">
+            </div>
+          </div>
+          
+          <div id="pdfOutput" class="tabcontent">
+            <div id="pdfData">
+            </div>
           </div>
         </section>
       </main>
