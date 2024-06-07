@@ -1,4 +1,4 @@
-/* univeral settings*/
+/*universal settings*/
 body {
   font-family: Arial, Helvetica, sans-serif;
   background-color: #fafafa;
@@ -11,26 +11,31 @@ body {
 
 /*navbar settings*/
 nav {
-  border-bottom: 1px solid #222;
   margin-bottom: 2em;
+  border-bottom: 1px solid #00000030;
 }
+
 ul {
   list-style-type: none;
-  padding: 1em;
   overflow: hidden;
+  padding: 1em;
 }
+
 li {
   display: inline;
 }
+
 .headerName {
   font-size: 30px;
   font-weight: 700;
   text-transform: uppercase;
 }
+
 .headerName a {
   text-decoration: none;
   color: #111;
 }
+
 .apiLink a {
   text-decoration: none;
   float: right;
@@ -40,25 +45,50 @@ li {
   border: 0;
   border-radius: 4px;
 }
+
 .apiLink a:hover {
   background-color: #222;
 }
 
+/*main container settings*/
+.mainContainer {
+  display: flex;
+}
+
 /*form settings*/
 .formPart {
-  display: flexbox;
-  margin: auto;
-  width: 600px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 400px;
   background-color: #fafafa;
   padding: 2em;
   border: 0;
   border-radius: 4px;
   box-shadow: 0 4px 8px 0 #00000033, 0 6px 20px 0 #00000030;
+  box-sizing: border-box;
 }
+
 label {
   font-size: 16px;
-  margin: 0.5em;
+  margin: 0.5em 0;
 }
+
+input[type="text"] {
+  padding: 8px;
+  border: 0;
+  border-radius: 4px;
+  background-color: #e6e6e6;
+  font-size: 14px;
+  width: 100%;
+  margin-bottom: 1em;
+  box-sizing: border-box;
+}
+
+input:hover {
+  background-color: #d6d6d6;
+}
+
 select {
   padding: 8px;
   background-color: #e6e6e6;
@@ -68,94 +98,121 @@ select {
   text-align: center;
   width: 100%;
 }
+
 select:hover {
   background-color: #d6d6d6;
-}
-input [type="text"] {
-  padding: 8px;
-  border: 0;
-  border-radius: 4px;
-  background-color: #e6e6e6;
-  font-size: 14px;
-}
-input:hover {
-  background-color: #d6d6d6;
-}
-input[type="text"] {
-  width: 100%;
-  margin-right: 1em;
-}
-.paramInput {
-  margin-top: 1em;
-}
-.paramInput input[type="text"] {
-  padding: 8px;
-  border: 1px solid #999;
-  border-radius: 4px;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-.paramInput label {
-  margin-bottom: 1em;
-  text-transform: capitalize;
-}
-
-/*download form settings*/
-#downloadForm {
-  display: flex;
-  align-items: center;
-  margin-top: 1em;
-}
-#format {
-  flex-grow: 1;
 }
 
 /*button settings*/
 .generateBtn {
   padding: 8px 20px;
-  margin-bottom: 1em;
   font-size: 16px;
   background-color: #478d53;
   color: #fafafa;
   border: 0;
   border-radius: 4px;
   width: 100%;
+  margin-bottom: 1em;
 }
+
 .generateBtn:hover {
   background-color: #45814f;
   cursor: pointer;
 }
+
+/*download form settings*/
+#downloadForm {
+  display: flex;
+  align-items: center;
+  margin-left: auto;
+  justify-content: flex-end;
+}
+
 .downloadBtn {
-  margin-left: 1em;
   padding: 8px 20px;
   font-size: 16px;
-  background-color: #555;
+  background-color: #db8433;
   color: #fafafa;
   border: 0;
   border-radius: 4px;
-  width: 100%;
+  width: auto;
+  margin-right: 1em;
 }
+
 .downloadBtn:hover {
-  background-color: #666;
+  background-color: #d48132;
   cursor: pointer;
 }
 
-/*json output settings*/
-#jsonOutput {
+/*tab nav settings*/
+.rightContainer {
+  display: flex;
+  flex-direction: column;
+  margin-left: 2em;
+  flex-grow: 1;
+  border-radius: 4px;
+  box-shadow: 0 4px 8px 0 #00000033, 0 6px 20px 0 #00000030;
+}
+.tabs {
+  display: flex;
+  border-radius: 4px 4px 0 0;
+  width: 100%;
+  background-color: #fafafa;
+}
+.tablinks {
+  color: #111;
+  padding: 1em;
+  border: none;
+  cursor: pointer;
+  text-align: center;
+  border-radius: 4px 4px 0 0;
+}
+
+.tablinks:hover {
+  background-color: #d6d6d6;
+}
+
+.tablinks.active {
+  background-color: #222;
+  color: #fafafa;
+}
+
+.tabcontent {
   display: none;
-  margin-top: 2em;
   padding: 2em;
   background-color: #222;
   color: #fafafa;
-  border-radius: 4px;
+  border-radius: 0 0 4px 4px;
   font-size: 14px;
+  flex-grow: 1;
 }
-#reportData pre {
+
+/*convert form*/
+#convertForm {
+  display: flex;
+  align-items: center;
+}
+.convertBtn {
+  padding: 8px 20px;
+  font-size: 16px;
+  background-color: #222;
+  color: #fafafa;
+  border: 0;
+  border-radius: 4px;
+  margin-left: 1em;
+  width: 100%;
+}
+.convertBtn:hover {
+  background-color: #333;
+  color: #fafafa;
+  cursor: pointer;
+}
+#reportData {
   white-space: pre-wrap;
   word-wrap: break-word;
 }
 
-/* error settings*/
+/*error settings*/
 .error {
   background-color: #db3333;
   color: #fafafa;
@@ -163,3 +220,25 @@ input[type="text"] {
   border: 0;
   border-radius: 4px;
 }
+
+/*CSV table*/
+#csvData table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+#csvData th,
+td {
+  border: 1px solid #ddd;
+  padding: 8px;
+  text-align: left;
+}
+
+#csvData th {
+  text-align: center;
+  padding: 8px;
+  font-size: 16px;
+  color: #fafafa;
+}
+
+/*PDF preview*/
