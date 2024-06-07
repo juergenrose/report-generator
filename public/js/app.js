@@ -68,6 +68,8 @@ async function showJsonOutput(event) {
   if (response.ok) {
     //parse the JSON response
     const jsonData = await response.json();
+    // Log the fetched JSON data
+    console.log("Fetched JSON data:", jsonData);
     //prettify the JSON data for display
     const prettifiedJson = JSON.stringify(jsonData, null, 2);
     document.getElementById(
@@ -78,6 +80,87 @@ async function showJsonOutput(event) {
       "reportData"
     ).innerHTML = `<p class="error">Error fetching report data. Please try again.</p>`;
   }
+}
+
+async function convert(event) {
+  event.preventDefault();
+  const jsonOutput = document.getElementById("jsonOutput");
+  const csvOutput = document.getElementById("csvData");
+
+  try {
+    //get JSON data from the jsonOutput tab
+    const jsonDataElement = jsonOutput.querySelector("pre");
+    
+    if (!jsonDataElement) {
+      throw new Error("No JSON data found");
+    } 
+    const jsonData = JSON.parse(jsonDataElement.innerText);
+    console.log("Fetched JSON data:", jsonData); // Log fetched JSON data
+
+    if (!jsonData.data || !Array.isArray(jsonData.data) || jsonData.data.length === 0 || !isObject(jsonData.data[0])) {
+      throw new Error("Invalid JSON data: Expected 'data' property to be an array of objects.");
+    }
+    //convert JSON to CSV format using the 'data' array
+    const csvContent = convertJsonToCsv(jsonData.data);
+    //convert CSV content to HTML table
+    const tableHTML = csvToHtmlTable(csvContent);
+    //display table in the csvOutput tab
+    csvOutput.innerHTML = tableHTML;    
+    //show csvOutput tab
+    openTab(event, 'csvOutput');
+  } catch (error) {
+    console.error("Error converting JSON to CSV:", error);
+    csvOutput.innerHTML = `<p class="error">Error converting JSON to CSV. Please try again.</p>`;
+  }
+}
+
+
+//convert CSV content to HTML table
+function csvToHtmlTable(csvContent) {
+  const rows = csvContent.split('\n');
+  let tableHTML = '<table>';
+
+  rows.forEach((row, index) => {
+    const columns = row.split(',');
+    tableHTML += '<tr>';
+    
+    columns.forEach(column => {
+      if (index === 0) {
+        tableHTML += `<th>${column}</th>`; 
+      } else {
+        tableHTML += `<td>${column}</td>`;
+      }
+    });
+
+    tableHTML += '</tr>';
+  });
+
+  tableHTML += '</table>';
+  return tableHTML;
+}
+
+
+//check if a variable is an object
+function isObject(variable) {
+  return variable && typeof variable === 'object' && variable.constructor === Object;
+}
+
+
+function convertJsonToCsv(jsonData) {
+  //check if jsonData is an array and not empty
+  if (!Array.isArray(jsonData) || jsonData.length === 0) {
+    throw new Error("Invalid JSON data: Expected an array of objects.");
+  }
+  
+  //check if the first element of the array is an object
+  if (typeof jsonData[0] !== 'object' || jsonData[0] === null) {
+    throw new Error("Invalid JSON data: Expected objects in the array.");
+  }
+
+  const headers = Object.keys(jsonData[0]);
+  const rows = jsonData.map(obj => headers.map(header => obj[header]));
+  const csvContent = [headers.join(','), ...rows.map(row => row.join(','))].join('\n');
+  return csvContent;
 }
 
 
@@ -121,6 +204,25 @@ async function downloadReport(event) {
     console.error("Error downloading report:", error);
   }
 }
+
+// tab function
+function openTab(evt, tabName) {
+  let i, tabcontent, tablinks;
+  tabcontent = document.getElementsByClassName("tabcontent");
+  for (i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
+  tablinks = document.getElementsByClassName("tablinks");
+  for (i = 0; i < tablinks.length; i++) {
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+  document.getElementById(tabName).style.display = "block";
+  evt.currentTarget.className += " active";
+}
+
+document.addEventListener("DOMContentLoaded", (event) => {
+  document.querySelector(".tablinks").click();
+});
 
 
 //fetch reports when the page is loaded
