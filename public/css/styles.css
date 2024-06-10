@@ -131,7 +131,7 @@ select:hover {
 .downloadBtn {
   padding: 8px 20px;
   font-size: 16px;
-  background-color: #db8433;
+  background-color: #e78b35;
   color: #fafafa;
   border: 0;
   border-radius: 4px;
@@ -225,6 +225,8 @@ select:hover {
 #csvData table {
   width: 100%;
   border-collapse: collapse;
+  border-radius: 0 0 4px 4px;
+
 }
 
 #csvData th,
@@ -234,11 +236,20 @@ td {
   text-align: left;
 }
 
+#csvData td{
+  background-color: #333;
+}
+
 #csvData th {
   text-align: center;
   padding: 8px;
   font-size: 16px;
+  background-color: #111;
   color: #fafafa;
 }
 
 /*PDF preview*/
+iframe{
+  border: 0;
+  border-radius: 4px;
+}
