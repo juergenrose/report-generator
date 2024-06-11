@@ -1,15 +1,19 @@
 //fetches the list of available reports and populates the dropdown menu
 async function fetchReports() {
-  const response = await fetch("/report");
-  const data = await response.json();
-  const reportList = document.getElementById("reportList");
-  //create an array containing all reports
-  const allReports = ["-- reportname -- "]; //empty option
-  allReports.push(...data.reports); //add actual reports
-  //generate HTML options for each report in the array and set it as the content of the reportList element
-  reportList.innerHTML = allReports
-    .map((report) => `<option value="${report}">${report}</option>`)
-    .join("");
+  try {
+    const response = await fetch("/report");
+    const data = await response.json();
+    const reportList = document.getElementById("reportList");
+    //create an array containing all reports
+    const allReports = ["-- reportname -- "]; //empty option
+    allReports.push(...data.reports); //add actual reports
+    //generate HTML options for each report in the array and set it as the content of the reportList element
+    reportList.innerHTML = allReports
+      .map((report) => `<option value="${report}">${report}</option>`)
+      .join("");
+  } catch (error) {
+    console.error("Error fetching reports:", error);
+  }
 }
 
 //fetches the parameters for the selected report and populates the parameter input fields
@@ -22,25 +26,29 @@ async function fetchParams() {
     paramList.innerHTML = `<p class="error">Please select a valid report.</p>`;
     return;
   }
-  const response = await fetch(`/report/${reportname}`);
-
-  //check if the response is successful
-  if (response.ok) {
-    const data = await response.json();
-    //generate HTML for parameter input fields based on retrieved data
-    paramList.innerHTML = Object.keys(data.parameters)
-      .map(
-        (param) => `
-    <div class="paramInput">
-      <label for="${param}">${param}</label>
-      <br>
-      <input type="text" id="${param}" name="${param}">
-    </div>
-  `
-      )
-      .join("");
-  } else {
-    paramList.innerHTML = `<p class="error">Report not found. Please select a valid report.</p>`;
+  try {
+    const response = await fetch(`/report/${reportname}`);
+    //check if the response is successful
+    if (response.ok) {
+      const data = await response.json();
+      //generate HTML for parameter input fields based on retrieved data
+      paramList.innerHTML = Object.keys(data.parameters)
+        .map(
+          (param) => `
+      <div class="paramInput">
+        <label for="${param}">${param}</label>
+        <br>
+        <input type="text" id="${param}" name="${param}">
+      </div>
+    `
+        )
+        .join("");
+    } else {
+      paramList.innerHTML = `<p class="error">Report not found. Please select a valid report.</p>`;
+    }
+  } catch (error) {
+    console.error("Error fetching parameters:", error);
+    paramList.innerHTML = `<p class="error">An error occurred while fetching parameters.</p>`;
   }
 }
 
@@ -50,36 +58,45 @@ async function showJsonOutput(event) {
   event.preventDefault();
   const reportname = document.getElementById("reportList").value;
   const form = document.getElementById("reportForm");
+  const jsonOutput = document.getElementById("jsonOutput");
+
   //serialize form data into URL-encoded format
   const params = new URLSearchParams(new FormData(form)).toString();
-  const jsonOutput = document.getElementById("jsonOutput");
-  jsonOutput.style.display = "block";
 
   //checks if a valid report is selected
   if (reportname === "-- reportname -- ") {
-    paramList.innerHTML = `<p class="error">Please select a valid report before generating.</p>`;
+    document.getElementById(
+      "paramList"
+    ).innerHTML = `<p class="error">Please select a valid report before generating.</p>`;
     jsonOutput.style.display = "none";
     return;
   }
-  const response = await fetch(`/report/${reportname}?${params}`);
 
-  if (response.ok) {
-    //parse the JSON response
-    const jsonData = await response.json();
-    // Log the fetched JSON data
-    console.log("Fetched JSON data:", jsonData);
-    //prettify the JSON data for display
-    const prettifiedJson = JSON.stringify(jsonData, null, 2);
+  try {
+    const response = await fetch(`/report/${reportname}?${params}`);
+    if (response.ok) {
+      //parse the JSON response
+      const jsonData = await response.json();
+      //prettify the JSON data for display
+      const prettifiedJson = JSON.stringify(jsonData, null, 2);
+      document.getElementById(
+        "reportData"
+      ).innerHTML = `<pre>${prettifiedJson}</pre>`;
+      jsonOutput.style.display = "block";
+    } else {
+      document.getElementById(
+        "reportData"
+      ).innerHTML = `<p class="error">Error fetching report data. Please try again.</p>`;
+    }
+  } catch (error) {
+    console.error("Error generating report:", error);
     document.getElementById(
       "reportData"
-    ).innerHTML = `<pre>${prettifiedJson}</pre>`;
-  } else {
-    document.getElementById(
-      "reportData"
-    ).innerHTML = `<p class="error">Error fetching report data. Please try again.</p>`;
+    ).innerHTML = `<p class="error">An error occurred while generating the report.</p>`;
   }
 }
 
+//converts JSON data to CSV format and displays it
 async function convert(event) {
   event.preventDefault();
   const jsonOutput = document.getElementById("jsonOutput");
@@ -88,12 +105,10 @@ async function convert(event) {
   try {
     //get JSON data from the jsonOutput tab
     const jsonDataElement = jsonOutput.querySelector("pre");
-
     if (!jsonDataElement) {
       throw new Error("No JSON data found");
     }
     const jsonData = JSON.parse(jsonDataElement.innerText);
-    console.log("Fetched JSON data:", jsonData); // Log fetched JSON data
 
     if (
       !jsonData.data ||
@@ -105,6 +120,7 @@ async function convert(event) {
         "Invalid JSON data: Expected 'data' property to be an array of objects."
       );
     }
+
     //convert JSON to CSV format using the 'data' array
     const csvContent = convertJsonToCsv(jsonData.data);
     //convert CSV content to HTML table
@@ -142,7 +158,6 @@ function csvToHtmlTable(csvContent) {
   tableHTML += "</table>";
   return tableHTML;
 }
-
 //check if a variable is an object
 function isObject(variable) {
   return (
@@ -150,6 +165,7 @@ function isObject(variable) {
   );
 }
 
+//convert JSON data to CSV format
 function convertJsonToCsv(jsonData) {
   //check if jsonData is an array and not empty
   if (!Array.isArray(jsonData) || jsonData.length === 0) {
@@ -182,7 +198,9 @@ async function downloadReport(event) {
 
   //validate if both report name and format are selected
   if (!reportname || reportname === "-- reportname -- " || !format) {
-    paramList.innerHTML = `<p class="error">Please select a valid report and format before downloading.</p>`;
+    document.getElementById(
+      "paramList"
+    ).innerHTML = `<p class="error">Please select a valid report and format before downloading.</p>`;
     return;
   }
 
@@ -190,7 +208,6 @@ async function downloadReport(event) {
     const response = await fetch(
       `/report/${reportname}?${params}&format=${format}`
     );
-
     if (!response.ok) {
       throw new Error("Failed to download report");
     }
@@ -211,24 +228,129 @@ async function downloadReport(event) {
   }
 }
 
-// tab function
-function openTab(evt, tabName) {
-  let i, tabcontent, tablinks;
-  tabcontent = document.getElementsByClassName("tabcontent");
-  for (i = 0; i < tabcontent.length; i++) {
-    tabcontent[i].style.display = "none";
+async function convert(event) {
+  event.preventDefault();
+  const format = document.getElementById("format").value;
+
+  if (format === "csv") {
+    convertToCSV(event);
+  } else if (format === "pdf") {
+    convertToPDF(event);
   }
-  tablinks = document.getElementsByClassName("tablinks");
-  for (i = 0; i < tablinks.length; i++) {
-    tablinks[i].className = tablinks[i].className.replace(" active", "");
-  }
-  document.getElementById(tabName).style.display = "block";
-  evt.currentTarget.className += " active";
 }
 
-document.addEventListener("DOMContentLoaded", (event) => {
-  document.querySelector(".tablinks").click();
-});
+async function convertToCSV(event) {
+  const jsonOutput = document.getElementById("jsonOutput");
+  const csvOutput = document.getElementById("csvData");
 
-//fetch reports when the page is loaded
-document.addEventListener("DOMContentLoaded", fetchReports);
+  try {
+    const jsonDataElement = jsonOutput.querySelector("pre");
+    if (!jsonDataElement) {
+      throw new Error("No JSON data found");
+    }
+
+    const jsonData = JSON.parse(jsonDataElement.innerText);
+    console.log("Fetched JSON data:", jsonData);
+
+    if (
+      !jsonData.data ||
+      !Array.isArray(jsonData.data) ||
+      jsonData.data.length === 0 ||
+      !isObject(jsonData.data[0])
+    ) {
+      throw new Error(
+        "Invalid JSON data: Expected 'data' property to be an array of objects."
+      );
+    }
+
+    const csvContent = convertJsonToCsv(jsonData.data);
+    const tableHTML = csvToHtmlTable(csvContent);
+    csvOutput.innerHTML = tableHTML;
+    openTab(event, "csvOutput");
+  } catch (error) {
+    console.error("Error converting JSON to CSV:", error);
+    csvOutput.innerHTML = `<p class="error">Error converting JSON to CSV. Please try again.</p>`;
+  }
+}
+
+//function for display a pdf preview
+async function convertToPDF(event) {
+  event.preventDefault();
+
+  const reportname = document.getElementById("reportList").value;
+  const jsonOutput = document.getElementById("jsonOutput");
+  const pdfOutput = document.getElementById("pdfData");
+  const form = document.getElementById("reportForm");
+  const params = new URLSearchParams(new FormData(form)).toString();
+  const format = "pdf"; // assuming the format is always PDF
+
+  try {
+    const jsonDataElement = jsonOutput.querySelector("pre");
+    if (!jsonDataElement) {
+      throw new Error("No JSON data found");
+    }
+
+    const jsonData = JSON.parse(jsonDataElement.innerText);
+    console.log("Fetched JSON data:", jsonData);
+
+    if (
+      !jsonData.data ||
+      !Array.isArray(jsonData.data) ||
+      jsonData.data.length === 0 ||
+      !isObject(jsonData.data[0])
+    ) {
+      throw new Error(
+        "Invalid JSON data: Expected 'data' property to be an array of objects."
+      );
+    }
+
+    //modify the endpoint to use GET request
+    const response = await fetch(
+      `/report/${reportname}?${params}&format=${format}`,
+      {
+        method: "GET", //change POST to GET
+      }
+    );
+
+    if (response.ok) {
+      const pdfBlob = await response.blob();
+      const pdfUrl = URL.createObjectURL(pdfBlob);
+      pdfOutput.innerHTML = `<embed src="${pdfUrl}" type="application/pdf" width="100%" height="800px" />`;
+      openTab(event, "pdfOutput");
+    } else {
+      const errorText = await response.text(); // capture any error message
+      throw new Error(`Failed to generate PDF: ${errorText}`);
+    }
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    pdfOutput.innerHTML = `<p class="error">Error generating PDF: ${error.message}. Please try again.</p>`;
+  }
+}
+
+function openTab(evt, tabName) {
+  const tabcontent = document.getElementsByClassName("tabcontent");
+  for (let i = 0; i < tabcontent.length; i++) {
+    tabcontent[i].style.display = "none";
+  }
+
+  const tablinks = document.getElementsByClassName("tablinks");
+  for (let i = 0; i < tablinks.length; i++) {
+    tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }
+
+  const selectedTab = document.getElementById(tabName);
+  if (selectedTab) {
+    selectedTab.style.display = "block";
+  }
+  if (evt.currentTarget) {
+    evt.currentTarget.className += " active";
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const firstTab = document.querySelector(".tablinks");
+  if (firstTab) {
+    firstTab.click();
+  }
+  fetchReports();
+});
