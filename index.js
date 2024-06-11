@@ -11,24 +11,21 @@ const path = require("path");
 const { exec } = require("child_process");
 const jsonCsv = require("json2csv");
 const { create } = require("xmlbuilder2");
-const yaml = require('yaml');
-
+const yaml = require("yaml");
 
 //middleware for static files and view engine
 app.use(cors());
-app.use(express.static('public'));
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'html');
-
+app.use(express.static("public"));
+app.set("views", path.join(__dirname, "views"));
+app.set("view engine", "html");
 
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, 'views', 'index.html'));
-})
+  res.sendFile(path.join(__dirname, "views", "index.html"));
+});
 
 app.get("/api-docs", (req, res) => {
   res.sendFile(path.join(__dirname, "swagger.yaml"));
 });
-
 
 //dynamically generate the list of API files
 async function getApiFiles() {
@@ -37,7 +34,6 @@ async function getApiFiles() {
   const jsFiles = files.filter((file) => file.endsWith(".js"));
   return jsFiles.map((file) => path.join(reportsDirectory, file));
 }
-
 
 app.get("/report", async (req, res) => {
   try {
@@ -54,21 +50,18 @@ app.get("/report", async (req, res) => {
   }
 });
 
-
-
+//route to handle reports
 app.get("/report/:reportname", async (req, res) => {
   try {
     const { reportname } = req.params;
     const queryParams = req.query;
 
     const filePath = path.join(__dirname, "routes", `${reportname}.js`);
-    await fsPromise.access(filePath); // Check if file exists
+    await fsPromise.access(filePath); //check if file exists
 
     const { runReport, getQueryParams } = require(filePath);
 
-    //check if the request has query parameters
     if (Object.keys(queryParams).length === 0) {
-      //no query parameters, return the parameters for the report
       if (typeof getQueryParams !== "function") {
         throw new Error(
           `getQueryParams function not found in ${reportname}.js`
@@ -77,14 +70,12 @@ app.get("/report/:reportname", async (req, res) => {
       const parameters = getQueryParams();
       res.json({ reportname, parameters });
     } else {
-      //parse the query params and determine the format (if any)
       const { value: parsedQueryParams, format } = parseQuery(queryParams);
 
       if (typeof runReport !== "function") {
         throw new Error(`runReport function not found in ${reportname}.js`);
       }
       const reportData = await runReport(parsedQueryParams);
-      //check if a specific format is requested and handle accordingly
       if (format) {
         switch (format) {
           case "csv":
@@ -97,7 +88,6 @@ app.get("/report/:reportname", async (req, res) => {
             res.status(400).send("Invalid format specified.");
         }
       } else {
-        //if no format is specified, send report as JSON
         res.json(reportData);
       }
     }
@@ -106,7 +96,6 @@ app.get("/report/:reportname", async (req, res) => {
     res.status(500).send(`Error handling report ${reportname}: ${err.message}`);
   }
 });
-
 
 //helper function to parse and format
 const parseQuery = (queryParams) => {
@@ -119,11 +108,13 @@ const parseQuery = (queryParams) => {
   return { value, format };
 };
 
-
 // handler for csv reports
 async function handleCsvReport(reportname, reportData, res) {
   const csvDir = path.join(__dirname, "csv");
   try {
+    if (!fs.existsSync(csvDir)) {
+      fs.mkdirSync(csvDir);
+    }
     const csvData = jsonCsv.parse(reportData); //convert JSON data to CSV
     const csvFilePath = path.join(csvDir, `${reportname}.csv`);
     await fsPromise.writeFile(csvFilePath, csvData); //write CSV data to file
@@ -144,7 +135,6 @@ async function handleCsvReport(reportname, reportData, res) {
   }
 }
 
-
 //handler for XML/PDF reports
 async function handleXmlReport(reportname, reportData, res) {
   try {
@@ -161,7 +151,7 @@ async function handleXmlReport(reportname, reportData, res) {
         const xmlKey = key.replace(/^\d/, "_$&");
         //check if the value is an object and not null
         if (typeof value === "object" && value !== null) {
-          //iterate over each key-value pair in the nested 'value' object                        
+          //iterate over each key-value pair in the nested 'value' object
           Object.entries(value).forEach(([subKey, subValue]) => {
             const subXmlKey = subKey.replace(/^\d/, "_$&");
             /*create a new xml element with the subXmlKey name under the recordElement
@@ -213,7 +203,6 @@ async function handleXmlReport(reportname, reportData, res) {
   }
 }
 
-
 async function generateAndSaveSwaggerDocs() {
   // Retrieve list of API files
   const apiFiles = await getApiFiles();
@@ -231,7 +220,7 @@ async function generateAndSaveSwaggerDocs() {
           url: "http://localhost:3000",
         },
       ],
-      paths: {},//initialize paths object for API endpoints
+      paths: {}, //initialize paths object for API endpoints
       components: {
         schemas: {
           ReportResponse: {
@@ -246,7 +235,8 @@ async function generateAndSaveSwaggerDocs() {
                 additionalProperties: {
                   type: "string",
                 },
-                description: "The query parameters used for generating the report.",
+                description:
+                  "The query parameters used for generating the report.",
               },
             },
           },
@@ -257,7 +247,7 @@ async function generateAndSaveSwaggerDocs() {
     apis: apiFiles.concat(__filename),
   };
   //iterate over each API file to dynamically generate swagger paths
-  apiFiles.forEach(file => {
+  apiFiles.forEach((file) => {
     const reportname = path.basename(file, ".js");
     //define swagger path for retrieving a specific report
     options.definition.paths[`/report/${reportname}`] = {
@@ -296,26 +286,27 @@ async function generateAndSaveSwaggerDocs() {
               type: "string",
               enum: ["csv", "pdf"],
             },
-            description: "Optional. The format in which to retrieve the report (e.g., csv, pdf)",
+            description:
+              "Optional. The format in which to retrieve the report (e.g., csv, pdf)",
           },
         ],
         //define possible responses
         responses: {
-          '200': {
-            description: 'Successful response',
+          200: {
+            description: "Successful response",
             content: {
-              'application/json': {
+              "application/json": {
                 schema: {
-                  $ref: '#/components/schemas/ReportResponse', //reference to the ReportResponse schema
+                  $ref: "#/components/schemas/ReportResponse", //reference to the ReportResponse schema
                 },
               },
             },
           },
-          '404': {
-            description: 'Report Not Found',
+          404: {
+            description: "Report Not Found",
           },
-          '500': {
-            description: 'Internal Server Error',
+          500: {
+            description: "Internal Server Error",
           },
         },
       },
@@ -326,12 +317,11 @@ async function generateAndSaveSwaggerDocs() {
   //convert swagger specs to yaml format
   const yamlData = yaml.stringify(specs);
   //write yaml data to a file named 'swagger.yaml' in the current directory
-  fs.writeFileSync(path.join(__dirname, 'swagger.yaml'), yamlData, 'utf8');
+  fs.writeFileSync(path.join(__dirname, "swagger.yaml"), yamlData, "utf8");
 }
 
-
 (async () => {
-    //generate and save swagger documentation
+  //generate and save swagger documentation
   await generateAndSaveSwaggerDocs();
   const apiFiles = await getApiFiles();
   //swagger options
@@ -355,14 +345,12 @@ async function generateAndSaveSwaggerDocs() {
   //generate Swagger specs from the options
   const specs = generateAndSaveSwaggerDocs(options);
 
-
   app.use(
     "/api-docs",
     swaggerUi.serve, //middleware to serve the swagger ui
     swaggerUi.setup(specs, { explorer: true }) //setup swagger ui with the generated specs and enable explorer
   );
 
-  
   //port listening
   app.listen(port, () => {
     console.log(`Server started, visit http://localhost:${port}/`);

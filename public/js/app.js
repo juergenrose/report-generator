@@ -347,7 +347,6 @@ function openTab(evt, tabName) {
   }
 }
 
-
 document.addEventListener("DOMContentLoaded", () => {
   const firstTab = document.querySelector(".tablinks");
   if (firstTab) {
