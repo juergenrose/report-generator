@@ -1,0 +1,102 @@
+openapi: 3.0.3
+info:
+  title: Reporter API
+  description: Report API for generating and handling reports
+  version: "1.0"
+servers:
+  - url: http://localhost:3000
+paths:
+  /report/mssql-test:
+    get:
+      summary: Retrieve mssql-test report
+      description: Retrieves the mssql-test report, optionally in a specified format
+        (CSV or PDF). Supports dynamic query parameters.
+      parameters:
+        - in: path
+          name: reportname
+          required: true
+          schema:
+            type: string
+          description: The name of the report to retrieve
+        - in: query
+          name: params
+          style: form
+          explode: true
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+          description: Additional dynamic query parameters for the report.
+        - in: query
+          name: format
+          schema:
+            type: string
+            enum:
+              - csv
+              - pdf
+          description: Optional. The format in which to retrieve the report (e.g., csv, pdf)
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportResponse"
+        "404":
+          description: Report Not Found
+        "500":
+          description: Internal Server Error
+  /report/mysql-test:
+    get:
+      summary: Retrieve mysql-test report
+      description: Retrieves the mysql-test report, optionally in a specified format
+        (CSV or PDF). Supports dynamic query parameters.
+      parameters:
+        - in: path
+          name: reportname
+          required: true
+          schema:
+            type: string
+          description: The name of the report to retrieve
+        - in: query
+          name: params
+          style: form
+          explode: true
+          schema:
+            type: object
+            additionalProperties:
+              type: string
+          description: Additional dynamic query parameters for the report.
+        - in: query
+          name: format
+          schema:
+            type: string
+            enum:
+              - csv
+              - pdf
+          description: Optional. The format in which to retrieve the report (e.g., csv, pdf)
+      responses:
+        "200":
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportResponse"
+        "404":
+          description: Report Not Found
+        "500":
+          description: Internal Server Error
+components:
+  schemas:
+    ReportResponse:
+      type: object
+      properties:
+        reportname:
+          type: string
+          description: The name of the report
+        params:
+          type: object
+          additionalProperties:
+            type: string
+          description: The query parameters used for generating the report.
+tags: []
