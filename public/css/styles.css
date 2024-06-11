@@ -53,6 +53,13 @@ li {
 /*main container settings*/
 .mainContainer {
   display: flex;
+  flex-direction: column; /* Change to column for better mobile support */
+}
+
+@media (min-width: 768px) {
+  .mainContainer {
+    flex-direction: row; /* Revert to row for larger screens */
+  }
 }
 
 /*form settings*/
@@ -153,12 +160,22 @@ select:hover {
   border-radius: 4px;
   box-shadow: 0 4px 8px 0 #00000033, 0 6px 20px 0 #00000030;
 }
+
+@media (max-width: 768px) {
+  .rightContainer {
+    margin-left: 0;
+    margin-top: 2em;
+  }
+}
+
 .tabs {
   display: flex;
   border-radius: 4px 4px 0 0;
   width: 100%;
   background-color: #fafafa;
+  flex-wrap: wrap; /*allow tabs to wrap on smaller screens */
 }
+
 .tablinks {
   color: #111;
   padding: 1em;
@@ -166,6 +183,10 @@ select:hover {
   cursor: pointer;
   text-align: center;
   border-radius: 4px 4px 0 0;
+  width: auto; 
+  min-width: 100px; 
+  font-size: 16px; 
+  flex: none; /* ensure tabs don't stretch */
 }
 
 .tablinks:hover {
@@ -191,7 +212,15 @@ select:hover {
 #convertForm {
   display: flex;
   align-items: center;
+  flex-direction: column; /*for better mobile support */
 }
+
+@media (min-width: 768px) {
+  #convertForm {
+    flex-direction: row; /*revert to row for larger screens */
+  }
+}
+
 .convertBtn {
   padding: 8px 20px;
   font-size: 16px;
@@ -202,11 +231,13 @@ select:hover {
   margin-left: 1em;
   width: 100%;
 }
+
 .convertBtn:hover {
   background-color: #333;
   color: #fafafa;
   cursor: pointer;
 }
+
 #reportData {
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -222,11 +253,14 @@ select:hover {
 }
 
 /*CSV table*/
+#csvData {
+  overflow-x: auto; /*allow horizontal scrolling */
+}
+
 #csvData table {
   width: 100%;
   border-collapse: collapse;
   border-radius: 0 0 4px 4px;
-
 }
 
 #csvData th,
@@ -236,7 +270,7 @@ td {
   text-align: left;
 }
 
-#csvData td{
+#csvData td {
   background-color: #333;
 }
 
@@ -249,7 +283,7 @@ td {
 }
 
 /*PDF preview*/
-iframe{
+embed {
   border: 0;
   border-radius: 4px;
 }
