@@ -210,13 +210,15 @@ select:hover {
 
 /*convert form*/
 #convertForm {
-  display: flex;
+  display: flexbox;
   align-items: center;
-  flex-direction: column; /*for better mobile support */
+  flex-direction: column; 
 }
 
 @media (min-width: 768px) {
   #convertForm {
+    margin: 0;
+    justify-content: space-around ;
     flex-direction: row; /*revert to row for larger screens */
   }
 }
@@ -228,8 +230,8 @@ select:hover {
   color: #fafafa;
   border: 0;
   border-radius: 4px;
-  margin-left: 1em;
   width: 100%;
+  margin-top: 1em;
 }
 
 .convertBtn:hover {
