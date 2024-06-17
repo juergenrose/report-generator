@@ -253,7 +253,7 @@ function parseCsvRow(rowContent) {
   return cells;
 }
 
-// Function for displaying a PDF preview
+//function for displaying a PDF preview
 async function convertToPDF(event) {
   event.preventDefault();
 
@@ -283,10 +283,8 @@ async function convertToPDF(event) {
         "Invalid JSON data: Expected 'data' property to be an array of objects."
       );
     }
-
     const url = `/report/${reportname}?${params}&format=${format}`;
     console.log("Request URL:", url);
-
     const response = await fetch(url, { method: "GET" });
 
     if (!response.ok) {
