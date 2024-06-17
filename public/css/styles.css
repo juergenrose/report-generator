@@ -110,6 +110,10 @@ select:hover {
   background-color: #d6d6d6;
 }
 
+.paramInput {
+  text-transform: capitalize;
+}
+
 /*button settings*/
 .generateBtn {
   padding: 8px 20px;
@@ -212,13 +216,13 @@ select:hover {
 #convertForm {
   display: flexbox;
   align-items: center;
-  flex-direction: column; 
+  flex-direction: column;
 }
 
 @media (min-width: 768px) {
   #convertForm {
     margin: 0;
-    justify-content: space-around ;
+    justify-content: space-around;
     flex-direction: row; /*revert to row for larger screens */
   }
 }
@@ -243,6 +247,28 @@ select:hover {
 #reportData {
   white-space: pre-wrap;
   word-wrap: break-word;
+}
+
+/* suggestions settings */
+.results {
+  display: hidden;
+  position: absolute;
+  background-color: #fafafa;
+  border: none;
+  border-radius: 4px;
+  max-height: 200px;
+  overflow-y: auto;
+  width: auto;
+  box-shadow: 0 4px 8px 0 #00000033, 0 6px 20px 0 #00000030;
+}
+.results p {
+  padding: 8px 12px;
+  margin: 0;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.results p:hover {
+  background-color: #e6e6e6;
 }
 
 /*error settings*/
