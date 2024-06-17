@@ -25,14 +25,13 @@ async function fetchParams() {
   const paramList = document.getElementById("paramList");
 
   //check if a valid report is selected
-  if (reportname === "-- reportname -- ") {
+  if (reportname === "-- reportname --") {
     paramList.innerHTML = `<p class="error">Please select a valid report.</p>`;
     return;
   }
 
   try {
     const response = await fetch(`/report/${reportname}`);
-    //check if the response is successful
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
@@ -94,7 +93,7 @@ async function fetchSuggestions(reportname, param, input) {
   }
 }
 
-// Function to select a suggestion for a parameter
+//function to select a suggestion for a parameter
 function selectSuggestion(param, suggestion) {
   document.getElementById(param).value = suggestion;
   document.getElementById(`${param}-results`).innerHTML = "";
@@ -140,11 +139,22 @@ async function showJsonOutput(event) {
 //converts JSON data to CSV format and displays it
 async function convert(event) {
   event.preventDefault();
+  const format = document.getElementById("format").value;
+
+  if (format === "csv") {
+    convertJsonToCsv(event);
+  } else if (format === "pdf") {
+    convertToPDF(event);
+  }
+}
+
+//function to convert JSON data to CSV format and display it
+async function convertJsonToCsv(event) {
+  event.preventDefault();
   const jsonOutput = document.getElementById("jsonOutput");
   const csvOutput = document.getElementById("csvData");
 
   try {
-    //get JSON data from the jsonOutput tab
     const jsonDataElement = jsonOutput.querySelector("pre");
     if (!jsonDataElement) {
       throw new Error("No JSON data found");
@@ -162,7 +172,7 @@ async function convert(event) {
       );
     }
     //convert JSON to CSV format using the 'data' array
-    const csvContent = convertJsonToCsv(jsonData.data);
+    const csvContent = generateCsvContent(jsonData.data);
     //convert CSV content to HTML table
     const tableHTML = csvToHtmlTable(csvContent);
     //display table in the csvOutput tab
@@ -175,9 +185,12 @@ async function convert(event) {
   }
 }
 
-//function to convert JSON data to CSV format
-function convertJsonToCsv(jsonArray) {
-  //extract headers from the first object
+//helper function to generate CSV content from JSON data
+function generateCsvContent(jsonArray) {
+  if (!Array.isArray(jsonArray) || jsonArray.length === 0) {
+    throw new Error("Invalid JSON array: It must be a non-empty array.");
+  }
+
   const headers = Object.keys(jsonArray[0]);
   //build CSV content with headers
   let csvContent = headers.join(",") + "\n";
@@ -198,7 +211,7 @@ function convertJsonToCsv(jsonArray) {
         return cell;
       })
       .join(",");
-      csvContent += row + "\n";
+    csvContent += row + "\n";
   });
   return csvContent;
 }
@@ -210,7 +223,6 @@ function csvToHtmlTable(csvContent) {
 
   rows.forEach((rowContent, rowIndex) => {
     const row = document.createElement("tr");
-
     //use a regular expression to properly split CSV row considering fields with commas and quotes
     const cells = rowContent.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
 
@@ -241,15 +253,66 @@ function parseCsvRow(rowContent) {
   return cells;
 }
 
+// Function for displaying a PDF preview
+async function convertToPDF(event) {
+  event.preventDefault();
+
+  const reportname = document.getElementById("reportList").value;
+  const jsonOutput = document.getElementById("jsonOutput");
+  const pdfOutput = document.getElementById("pdfData");
+  const form = document.getElementById("reportForm");
+  const params = new URLSearchParams(new FormData(form)).toString();
+  const format = "pdf";
+
+  try {
+    const jsonDataElement = jsonOutput.querySelector("pre");
+    if (!jsonDataElement) {
+      throw new Error("No JSON data found");
+    }
+
+    const jsonData = JSON.parse(jsonDataElement.innerText);
+    console.log("Fetched JSON data:", jsonData);
+
+    if (
+      !jsonData.data ||
+      !Array.isArray(jsonData.data) ||
+      jsonData.data.length === 0 ||
+      !isObject(jsonData.data[0])
+    ) {
+      throw new Error(
+        "Invalid JSON data: Expected 'data' property to be an array of objects."
+      );
+    }
+
+    const url = `/report/${reportname}?${params}&format=${format}`;
+    console.log("Request URL:", url);
+
+    const response = await fetch(url, { method: "GET" });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to generate PDF: ${errorText}`);
+    }
+
+    const pdfBlob = await response.blob();
+    const pdfUrl = URL.createObjectURL(pdfBlob);
+    console.log("PDF URL:", pdfUrl);
+
+    pdfOutput.innerHTML = `<embed src="${pdfUrl}" type="application/pdf" width="100%" height="800px" />`;
+    openTab(event, "pdfOutput");
+  } catch (error) {
+    console.error("Error generating PDF:", error);
+    pdfOutput.innerHTML = `<p class="error">Error generating PDF: ${error.message}. Please try again.</p>`;
+  }
+}
+
 //function to handle downloading the report
 async function downloadReport(event) {
-  //prevent the default form submission behavior
   event.preventDefault();
   const reportname = document.getElementById("reportList").value;
   const format = document.getElementById("format").value;
   const form = document.getElementById("reportForm");
 
-  //validate if both report name and format are selected
   if (!reportname || reportname === "-- reportname --" || !format) {
     document.getElementById(
       "paramList"
@@ -265,15 +328,11 @@ async function downloadReport(event) {
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
-    //retrieve the binary data (blob) from the response
     const blob = await response.blob();
-    //create a temporary url for the downloaded file
     const downloadUrl = URL.createObjectURL(blob);
-    //create a temporary <a> element to trigger the download
     const a = document.createElement("a");
     a.href = downloadUrl;
     a.download = `${reportname}.${format}`;
-    //append the <a> element to the document body, trigger the download, and remove the element
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -282,74 +341,6 @@ async function downloadReport(event) {
     alert("Failed to download report. Please try again.");
   }
 }
-async function convert(event) {
-  event.preventDefault();
-  const format = document.getElementById("format").value;
-
-  if (format === "csv") {
-    convertJsonToCsv(event);
-  } else if (format === "pdf") {
-    convertToPDF(event);
-  }
-}
-
-
-//function for display a pdf preview
-async function convertToPDF(event) {
-  event.preventDefault();
-
-  const reportname = document.getElementById("reportList").value;
-  const jsonOutput = document.getElementById("jsonOutput");
-  const pdfOutput = document.getElementById("pdfData");
-  const form = document.getElementById("reportForm");
-  const params = new URLSearchParams(new FormData(form)).toString();
-  const format = "pdf"; // assuming the format is always PDF
-
-  try {
-    // Check if the JSON data element exists
-    const jsonDataElement = jsonOutput.querySelector("pre");
-    if (!jsonDataElement) {
-      throw new Error("No JSON data found");
-    }
-
-    // Parse the JSON data
-    const jsonData = JSON.parse(jsonDataElement.innerText);
-    console.log("Fetched JSON data:", jsonData);
-
-    // Validate the JSON data format
-    if (!jsonData.data || !Array.isArray(jsonData.data) || jsonData.data.length === 0 || !isObject(jsonData.data[0])) {
-      throw new Error("Invalid JSON data: Expected 'data' property to be an array of objects.");
-    }
-
-    // Construct the request URL
-    const url = `/report/${reportname}?${params}&format=${format}`;
-    console.log("Request URL:", url);
-
-    // Fetch the PDF from the server
-    const response = await fetch(url, { method: "GET" });
-
-    // Check if the response is OK
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to generate PDF: ${errorText}`);
-    }
-
-    // Create a blob from the response
-    const pdfBlob = await response.blob();
-    const pdfUrl = URL.createObjectURL(pdfBlob);
-    console.log("PDF URL:", pdfUrl);
-
-    // Embed the PDF in the output element
-    pdfOutput.innerHTML = `<embed src="${pdfUrl}" type="application/pdf" width="100%" height="800px" />`;
-    openTab(event, "pdfOutput");
-
-  } catch (error) {
-    // Log and display any errors
-    console.error("Error generating PDF:", error);
-    pdfOutput.innerHTML = `<p class="error">Error generating PDF: ${error.message}. Please try again.</p>`;
-  }
-}
-
 
 //function to handle tab navigation
 function openTab(evt, tabName) {
