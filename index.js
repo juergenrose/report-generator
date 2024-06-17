@@ -97,6 +97,30 @@ app.get("/report/:reportname", async (req, res) => {
   }
 });
 
+//route to handle suggestions for a report
+app.get("/report/:reportname/suggestions", async (req, res) => {
+  try {
+    const { reportname } = req.params;
+    const queryParams = req.query;
+    const filePath = path.join(__dirname, "routes", `${reportname}.js`);
+    await fsPromise.access(filePath);
+    const { getSuggestions } = require(filePath);
+
+    if (typeof getSuggestions !== "function") {
+      throw new Error(`getSuggestions function not found in ${reportname}.js`);
+    }
+    const suggestions = await getSuggestions(queryParams);
+
+    res.json({ suggestions });
+  } catch (err) {
+    const { reportname } = req.params;
+    console.error(`Error handling suggestions for ${reportname}:`, err);
+    res
+      .status(500)
+      .send(`Error handling suggestions for ${reportname}: ${err.message}`);
+  }
+});
+
 //helper function to parse and format
 const parseQuery = (queryParams) => {
   //extract the foramt params from the query params , if it exists, or set to null if it does not
