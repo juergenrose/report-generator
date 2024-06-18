@@ -23,10 +23,6 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "index.html"));
 });
 
-app.get("/api-docs", (req, res) => {
-  res.sendFile(path.join(__dirname, "swagger.yaml"));
-});
-
 //dynamically generate the list of API files
 async function getApiFiles() {
   const reportsDirectory = path.join(__dirname, "routes");
@@ -227,10 +223,10 @@ async function handleXmlReport(reportname, reportData, res) {
   }
 }
 
+// Function to generate and save Swagger docs
 async function generateAndSaveSwaggerDocs() {
-  // Retrieve list of API files
   const apiFiles = await getApiFiles();
-  //define Swagger options
+
   const options = {
     definition: {
       openapi: "3.0.3",
@@ -244,7 +240,7 @@ async function generateAndSaveSwaggerDocs() {
           url: "http://localhost:3000",
         },
       ],
-      paths: {}, //initialize paths object for API endpoints
+      paths: {},
       components: {
         schemas: {
           ReportResponse: {
@@ -264,22 +260,30 @@ async function generateAndSaveSwaggerDocs() {
               },
             },
           },
+          SuggestionsResponse: {
+            type: "object",
+            properties: {
+              suggestions: {
+                type: "array",
+                items: {
+                  type: "string",
+                },
+                description: "Array of suggestions for the report.",
+              },
+            },
+          },
         },
       },
     },
-    //include all api files for swagger generation
     apis: apiFiles.concat(__filename),
   };
-  //iterate over each API file to dynamically generate swagger paths
+
   apiFiles.forEach((file) => {
     const reportname = path.basename(file, ".js");
-    //define swagger path for retrieving a specific report
     options.definition.paths[`/report/${reportname}`] = {
       get: {
-        //summary and description of the API endpoint
         summary: `Retrieve ${reportname} report`,
         description: `Retrieves the ${reportname} report, optionally in a specified format (CSV or PDF). Supports dynamic query parameters.`,
-        //define path and query parameters
         parameters: [
           {
             in: "path",
@@ -314,14 +318,63 @@ async function generateAndSaveSwaggerDocs() {
               "Optional. The format in which to retrieve the report (e.g., csv, pdf)",
           },
         ],
-        //define possible responses
         responses: {
           200: {
             description: "Successful response",
             content: {
               "application/json": {
                 schema: {
-                  $ref: "#/components/schemas/ReportResponse", //reference to the ReportResponse schema
+                  $ref: "#/components/schemas/ReportResponse",
+                },
+              },
+            },
+          },
+          404: {
+            description: "Report Not Found",
+          },
+          500: {
+            description: "Internal Server Error",
+          },
+        },
+      },
+    };
+
+    options.definition.paths[`/report/${reportname}/suggestions`] = {
+      get: {
+        summary: `Retrieve suggestions for ${reportname} report`,
+        description: `Retrieves suggestions for the ${reportname} report based on query parameters.`,
+        parameters: [
+          {
+            in: "path",
+            name: "reportname",
+            required: true,
+            schema: {
+              type: "string",
+            },
+            description: "The name of the report to retrieve suggestions for",
+          },
+          {
+            in: "query",
+            name: "params",
+            style: "form",
+            explode: true,
+            schema: {
+              type: "object",
+              additionalProperties: {
+                type: "string",
+              },
+            },
+            description:
+              "Additional dynamic query parameters for the report suggestions.",
+          },
+        ],
+        responses: {
+          200: {
+            description: "Successful response",
+            content: {
+              "application/json": {
+                schema: {
+                  $ref: "#/components/schemas/SuggestionsResponse",
                 },
               },
             },
@@ -336,47 +389,50 @@ async function generateAndSaveSwaggerDocs() {
       },
     };
   });
-  //generate swagger documentation using swaggerJsdoc library
+
   const specs = swaggerJsdoc(options);
-  //convert swagger specs to yaml format
   const yamlData = yaml.stringify(specs);
-  //write yaml data to a file named 'swagger.yaml' in the current directory
   fs.writeFileSync(path.join(__dirname, "swagger.yaml"), yamlData, "utf8");
+
+  return specs;
 }
 
+// Route to handle suggestions for a report
+app.get("/report/:reportname/suggestions", async (req, res) => {
+  try {
+    const { reportname } = req.params;
+    const queryParams = req.query;
+    const filePath = path.join(__dirname, "routes", `${reportname}.js`);
+    await fsPromise.access(filePath);
+    const { getSuggestions } = require(filePath);
+
+    if (typeof getSuggestions !== "function") {
+      throw new Error(`getSuggestions function not found in ${reportname}.js`);
+    }
+    const suggestions = await getSuggestions(queryParams);
+
+    res.json({ suggestions });
+  } catch (err) {
+    const { reportname } = req.params;
+    console.error(`Error handling suggestions for ${reportname}:`, err);
+    res
+      .status(500)
+      .send(`Error handling suggestions for ${reportname}: ${err.message}`);
+  }
+});
+
+// Generate and save Swagger docs, then set up the Swagger UI
 (async () => {
-  //generate and save swagger documentation
-  await generateAndSaveSwaggerDocs();
-  const apiFiles = await getApiFiles();
-  //swagger options
-  const options = {
-    definition: {
-      openapi: "3.0.3",
-      info: {
-        title: "Reporter API",
-        description: "Report API for generating and handling reports",
-        version: "1.0",
-      },
-      servers: [
-        {
-          url: "http://localhost:3000",
-        },
-      ],
-    },
-    //include all api files
-    apis: apiFiles.concat(__filename),
-  };
-  //generate Swagger specs from the options
-  const specs = generateAndSaveSwaggerDocs(options);
+  const specs = await generateAndSaveSwaggerDocs();
 
   app.use(
     "/api-docs",
-    swaggerUi.serve, //middleware to serve the swagger ui
-    swaggerUi.setup(specs, { explorer: true }) //setup swagger ui with the generated specs and enable explorer
+    swaggerUi.serve,
+    swaggerUi.setup(specs, { explorer: true })
   );
 
-  //port listening
+  const port = 3000;
   app.listen(port, () => {
-    console.log(`Server started, visit http://localhost:${port}/`);
+    console.log(`Server is running on http://localhost:${port}`);
   });
 })();
