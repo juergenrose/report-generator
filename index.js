@@ -1,17 +1,12 @@
 //required modules
 const express = require("express");
 const app = express();
-const swaggerUi = require("swagger-ui-express");
-const swaggerJsdoc = require("swagger-jsdoc");
 const port = 3000;
 const cors = require("cors");
-const fs = require("fs");
 const fsPromise = require("fs").promises;
 const path = require("path");
-const { exec } = require("child_process");
-const jsonCsv = require("json2csv");
-const { create } = require("xmlbuilder2");
-const yaml = require("yaml");
+const { setupSwagger } = require("./generate-api");
+const { handleXmlReport, handleCsvReport } = require("./convert-report");
 
 //middleware for static files and view engine
 app.use(cors());
@@ -23,13 +18,16 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "index.html"));
 });
 
-//dynamically generate the list of API files
-async function getApiFiles() {
-  const reportsDirectory = path.join(__dirname, "routes");
-  const files = await fsPromise.readdir(reportsDirectory);
-  const jsFiles = files.filter((file) => file.endsWith(".js"));
-  return jsFiles.map((file) => path.join(reportsDirectory, file));
-}
+//helper function to parse and format
+const parseQuery = (queryParams) => {
+  //extract the format params from the query params , if it exists, or set to null if it does not
+  const format = queryParams.format || null;
+  //create a copy of the query params to avoid mutaating the original object
+  const value = { ...queryParams };
+  //remove the format parameter from the copy of query params
+  delete value.format;
+  return { value, format };
+};
 
 app.get("/report", async (req, res) => {
   try {
@@ -72,13 +70,14 @@ app.get("/report/:reportname", async (req, res) => {
         throw new Error(`runReport function not found in ${reportname}.js`);
       }
       const reportData = await runReport(parsedQueryParams);
+
       if (format) {
         switch (format) {
           case "csv":
             await handleCsvReport(reportname, reportData, res);
             break;
           case "pdf":
-            await handleXmlReport(reportname, reportData, res);
+            await handleXmlReport(reportname, reportData, res, queryParams);
             break;
           default:
             res.status(400).send("Invalid format specified.");
@@ -117,322 +116,11 @@ app.get("/report/:reportname/suggestions", async (req, res) => {
   }
 });
 
-//helper function to parse and format
-const parseQuery = (queryParams) => {
-  //extract the foramt params from the query params , if it exists, or set to null if it does not
-  const format = queryParams.format || null;
-  //create a copy of the query params to avoid mutaating the original object
-  const value = { ...queryParams };
-  //remove the format parameter from the copy of query params
-  delete value.format;
-  return { value, format };
-};
-
-// handler for csv reports
-async function handleCsvReport(reportname, reportData, res) {
-  const csvDir = path.join(__dirname, "csv");
-  try {
-    if (!fs.existsSync(csvDir)) {
-      fs.mkdirSync(csvDir);
-    }
-    const csvData = jsonCsv.parse(reportData); //convert JSON data to CSV
-    const csvFilePath = path.join(csvDir, `${reportname}.csv`);
-    await fsPromise.writeFile(csvFilePath, csvData); //write CSV data to file
-
-    //set header
-    res.setHeader(
-      "Content-disposition",
-      `attachment; filename=${reportname}.csv`
-    );
-    res.set("Content-Type", "text/csv");
-    //send csv data with a 200 status
-    res.status(200).send(csvData);
-  } catch (err) {
-    console.error(`Error generating CSV report for ${reportname}`, err);
-    res
-      .status(500)
-      .send(`Error generating CSV report for ${reportname}: ${err.message}`);
-  }
-}
-
-//handler for XML/PDF reports
-async function handleXmlReport(reportname, reportData, res) {
-  try {
-    if (!Array.isArray(reportData.data)) {
-      throw new Error("Report data is not an array");
-    }
-    //create the XML structure
-    const root = create({ version: "1.0" }).ele(reportname);
-
-    reportData.data.forEach((record, index) => {
-      const recordElement = root.ele(`record_${index}`);
-      //iterate over each key-value pair in the 'record' object
-      Object.entries(record).forEach(([key, value]) => {
-        const xmlKey = key.replace(/^\d/, "_$&");
-        //check if the value is an object and not null
-        if (typeof value === "object" && value !== null) {
-          //iterate over each key-value pair in the nested 'value' object
-          Object.entries(value).forEach(([subKey, subValue]) => {
-            const subXmlKey = subKey.replace(/^\d/, "_$&");
-            /*create a new xml element with the subXmlKey name under the recordElement
-            and set subValue as the text content of this element */
-            recordElement.ele(subXmlKey).txt(subValue);
-          });
-        } else {
-          recordElement.ele(xmlKey).txt(value);
-        }
-      });
-    });
-    const xmlData = root.end({ prettyPrint: true });
-    //define file paths
-    const xmlDir = path.join(__dirname, "xml");
-    const pdfDir = path.join(__dirname, "pdf");
-    const xmlFilePath = path.join(xmlDir, `${reportname}.xml`);
-    const pdfFilePath = path.join(pdfDir, `${reportname}.pdf`);
-    const xslFilePath = path.join(__dirname, "styles", "report-style.xsl");
-    const fopCmdPath = path.join(__dirname, "fop/fop", "fop.cmd");
-
-    //ensure directories exist
-    if (!fs.existsSync(xmlDir)) fs.mkdirSync(xmlDir);
-    if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir);
-    //write the xml data to a file
-    fs.writeFileSync(xmlFilePath, xmlData);
-    //cmd to convert xml to pdf using apache fop
-    const cmd = `${fopCmdPath} -xml ${xmlFilePath} -xsl ${xslFilePath} -pdf ${pdfFilePath} -param Code ${reportData.data[0].Code}`;
-
-    //execute the command
-    exec(cmd, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error executing Apache FOP: ${error}`);
-        res.status(500).send(`Error executing Apache FOP: ${error.message}`);
-        return;
-      }
-      //set header
-      res.setHeader(
-        "Content-disposition",
-        `attachment; filename=${reportname}.pdf`
-      );
-      res.set("Content-Type", "application/pdf");
-      res.status(200).sendFile(pdfFilePath);
-    });
-  } catch (err) {
-    console.error(`Error handling XML report for ${reportname}:`, err);
-    res
-      .status(500)
-      .send(`Error handling XML report for ${reportname}: ${err.message}`);
-  }
-}
-
-// Function to generate and save Swagger docs
-async function generateAndSaveSwaggerDocs() {
-  const apiFiles = await getApiFiles();
-
-  const options = {
-    definition: {
-      openapi: "3.0.3",
-      info: {
-        title: "Reporter API",
-        description: "Report API for generating and handling reports",
-        version: "1.0",
-      },
-      servers: [
-        {
-          url: "http://localhost:3000",
-        },
-      ],
-      paths: {},
-      components: {
-        schemas: {
-          ReportResponse: {
-            type: "object",
-            properties: {
-              reportname: {
-                type: "string",
-                description: "The name of the report",
-              },
-              params: {
-                type: "object",
-                additionalProperties: {
-                  type: "string",
-                },
-                description:
-                  "The query parameters used for generating the report.",
-              },
-            },
-          },
-          SuggestionsResponse: {
-            type: "object",
-            properties: {
-              suggestions: {
-                type: "array",
-                items: {
-                  type: "string",
-                },
-                description: "Array of suggestions for the report.",
-              },
-            },
-          },
-        },
-      },
-    },
-    apis: apiFiles.concat(__filename),
-  };
-
-  apiFiles.forEach((file) => {
-    const reportname = path.basename(file, ".js");
-    options.definition.paths[`/report/${reportname}`] = {
-      get: {
-        summary: `Retrieve ${reportname} report`,
-        description: `Retrieves the ${reportname} report, optionally in a specified format (CSV or PDF). Supports dynamic query parameters.`,
-        parameters: [
-          {
-            in: "path",
-            name: "reportname",
-            required: true,
-            schema: {
-              type: "string",
-            },
-            description: "The name of the report to retrieve",
-          },
-          {
-            in: "query",
-            name: "params",
-            style: "form",
-            explode: true,
-            schema: {
-              type: "object",
-              additionalProperties: {
-                type: "string",
-              },
-            },
-            description: "Additional dynamic query parameters for the report.",
-          },
-          {
-            in: "query",
-            name: "format",
-            schema: {
-              type: "string",
-              enum: ["csv", "pdf"],
-            },
-            description:
-              "Optional. The format in which to retrieve the report (e.g., csv, pdf)",
-          },
-        ],
-        responses: {
-          200: {
-            description: "Successful response",
-            content: {
-              "application/json": {
-                schema: {
-                  $ref: "#/components/schemas/ReportResponse",
-                },
-              },
-            },
-          },
-          404: {
-            description: "Report Not Found",
-          },
-          500: {
-            description: "Internal Server Error",
-          },
-        },
-      },
-    };
-
-    options.definition.paths[`/report/${reportname}/suggestions`] = {
-      get: {
-        summary: `Retrieve suggestions for ${reportname} report`,
-        description: `Retrieves suggestions for the ${reportname} report based on query parameters.`,
-        parameters: [
-          {
-            in: "path",
-            name: "reportname",
-            required: true,
-            schema: {
-              type: "string",
-            },
-            description: "The name of the report to retrieve suggestions for",
-          },
-          {
-            in: "query",
-            name: "params",
-            style: "form",
-            explode: true,
-            schema: {
-              type: "object",
-              additionalProperties: {
-                type: "string",
-              },
-            },
-            description:
-              "Additional dynamic query parameters for the report suggestions.",
-          },
-        ],
-        responses: {
-          200: {
-            description: "Successful response",
-            content: {
-              "application/json": {
-                schema: {
-                  $ref: "#/components/schemas/SuggestionsResponse",
-                },
-              },
-            },
-          },
-          404: {
-            description: "Report Not Found",
-          },
-          500: {
-            description: "Internal Server Error",
-          },
-        },
-      },
-    };
-  });
-
-  const specs = swaggerJsdoc(options);
-  const yamlData = yaml.stringify(specs);
-  fs.writeFileSync(path.join(__dirname, "swagger.yaml"), yamlData, "utf8");
-
-  return specs;
-}
-
-// Route to handle suggestions for a report
-app.get("/report/:reportname/suggestions", async (req, res) => {
-  try {
-    const { reportname } = req.params;
-    const queryParams = req.query;
-    const filePath = path.join(__dirname, "routes", `${reportname}.js`);
-    await fsPromise.access(filePath);
-    const { getSuggestions } = require(filePath);
-
-    if (typeof getSuggestions !== "function") {
-      throw new Error(`getSuggestions function not found in ${reportname}.js`);
-    }
-    const suggestions = await getSuggestions(queryParams);
-
-    res.json({ suggestions });
-  } catch (err) {
-    const { reportname } = req.params;
-    console.error(`Error handling suggestions for ${reportname}:`, err);
-    res
-      .status(500)
-      .send(`Error handling suggestions for ${reportname}: ${err.message}`);
-  }
-});
-
-// Generate and save Swagger docs, then set up the Swagger UI
 (async () => {
-  const specs = await generateAndSaveSwaggerDocs();
+  await setupSwagger(app);
 
-  app.use(
-    "/api-docs",
-    swaggerUi.serve,
-    swaggerUi.setup(specs, { explorer: true })
-  );
 
-  const port = 3000;
   app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
+    console.log(`Server is running at http://localhost:${port}`);
   });
 })();
