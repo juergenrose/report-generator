@@ -66,21 +66,25 @@ async function handleXmlReport(reportname, reportData, res, queryParams) {
     const xmlData = root.end({ prettyPrint: true });
     const xmlDir = path.join(__dirname, "xml");
     const pdfDir = path.join(__dirname, "pdf");
-    const xmlFilePath = path.join(xmlDir, `${reportname}.xml`);
-    const pdfFilePath = path.join(pdfDir, `${reportname}.pdf`);
-    const xslFilePath = path.join(__dirname, "styles", "report-style.xsl");
-    const fopCmdPath = path.join(__dirname, "fop/fop", "fop.cmd");
+    const xmlFile = path.join(xmlDir, `${reportname}.xml`);
+    const pdfFile = path.join(pdfDir, `${reportname}.pdf`);
+    const specificXsl = path.join(__dirname, "styles", `${reportname}.xsl`);
+    const defaultXsl = path.join(__dirname, "styles", "report-style.xsl");
+    const fopCmd = path.join(__dirname, "fop/fop", "fop.cmd");
 
     //create directories if they don't exist
     if (!fs.existsSync(xmlDir)) fs.mkdirSync(xmlDir);
     if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir);
-    fs.writeFileSync(xmlFilePath, xmlData);
+    fs.writeFileSync(xmlFile, xmlData);
+
+    //determine which XSL file to use
+    const xslFile = fs.existsSync(specificXsl) ? specificXsl : defaultXsl;
 
     //construct the permalink using the query parameters
     const queryParamsString = new URLSearchParams(queryParams).toString();
     const permalink = `/report/${reportname}?${queryParamsString}`;
     //construct the command dynamically
-    const cmd = `${fopCmdPath} -xml ${xmlFilePath} -xsl ${xslFilePath} -pdf ${pdfFilePath} -param Permalink "${permalink}" -param Code ${reportData.data[0].Code}`;
+    const cmd = `${fopCmd} -xml ${xmlFile} -xsl ${xslFile} -pdf ${pdfFile} -param Permalink "${permalink}" -param Code ${reportData.data[0].Code}`;
 
     //execute Apache FOP command to generate PDF
     exec(cmd, (error, stdout, stderr) => {
@@ -96,7 +100,7 @@ async function handleXmlReport(reportname, reportData, res, queryParams) {
       );
       res.setHeader("Content-Type", "application/pdf");
       //send the PDF file
-      fs.createReadStream(pdfFilePath).pipe(res);
+      fs.createReadStream(pdfFile).pipe(res);
     });
   } catch (err) {
     console.error(`Error handling XML report for ${reportname}:`, err);
