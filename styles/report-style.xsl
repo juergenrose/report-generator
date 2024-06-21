@@ -46,8 +46,10 @@
                 <!-- Include row for permalink -->
                 <fo:table-row>
                   <fo:table-cell number-columns-spanned="3">
-                    <fo:block font-size="10pt" font-style="italic" text-align="center">
-                      <xsl:value-of select="$Permalink"/>
+                    <fo:block font-size="10pt" font-style="italic" text-align="center" margin-top="3mm">
+                      <fo:basic-link external-destination="{$Permalink}">
+                        <xsl:value-of select="$Permalink"/>
+                      </fo:basic-link>
                     </fo:block>
                   </fo:table-cell>
                 </fo:table-row>
