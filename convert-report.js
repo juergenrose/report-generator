@@ -84,7 +84,7 @@ async function handleXmlReport(reportname, reportData, res, queryParams) {
     const queryParamsString = new URLSearchParams(queryParams).toString();
     const permalink = `/report/${reportname}?${queryParamsString}`;
     //construct the command dynamically
-    const cmd = `${fopCmd} -xml ${xmlFile} -xsl ${xslFile} -pdf ${pdfFile} -param Permalink "${permalink}" -param Code ${reportData.data[0].Code}`;
+    const cmd = `${fopCmd} -xml ${xmlFile} -xsl ${xslFile} -pdf ${pdfFile} -param Permalink "${permalink}" -param CountryCode ${reportData.data[0].CountryCode}`;
 
     //execute Apache FOP command to generate PDF
     exec(cmd, (error, stdout, stderr) => {
