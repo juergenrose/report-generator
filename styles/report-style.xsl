@@ -4,7 +4,7 @@
 
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes"/>
   <xsl:namespace-alias stylesheet-prefix="date" result-prefix="date" />
-  <xsl:param name="Code"/>
+  <xsl:param name="CountryCode"/>
   <xsl:param name="Permalink"/>
 
   <!-- Main template to generate the PDF -->
@@ -80,7 +80,7 @@
         <!-- Block to display the flag image above the data -->
         <fo:block>
           <!-- Use the flag image URL passed as a parameter -->
-          <xsl:variable name="flagUrl" select="document('countryFlags.xml')/flags/*[name()=$Code]"/>
+          <xsl:variable name="flagUrl" select="document('countryFlags.xml')/flags/*[name()=$CountryCode]"/>
           <!-- Display the image using the retrieved URL -->
           <fo:block text-align="end" space-after="10pt">
             <fo:external-graphic src="{$flagUrl}" content-width="15mm"/>
