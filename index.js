@@ -61,8 +61,15 @@ app.get("/report/:reportname", async (req, res) => {
           `getQueryParams function not found in ${reportname}.js`
         );
       }
-      const parameters = getQueryParams();
-      res.json({ reportname, parameters });
+      const parameters = await getQueryParams(); // ensure to await getQueryParams()
+
+      if (!parameters) {
+        return res
+          .status(404)
+          .json({ error: "No parameters found for this report." });
+      }
+      // return report name and parameters object
+      return res.json({ reportname, parameters });
     } else {
       const { value: parsedQueryParams, format } = parseQuery(queryParams);
 
@@ -108,7 +115,6 @@ app.get("/report/:reportname/suggestions", async (req, res) => {
 
     res.json({ suggestions });
   } catch (err) {
-    const { reportname } = req.params;
     console.error(`Error handling suggestions for ${reportname}:`, err);
     res
       .status(500)
@@ -116,9 +122,9 @@ app.get("/report/:reportname/suggestions", async (req, res) => {
   }
 });
 
+//setup Swagger and start the server
 (async () => {
   await setupSwagger(app);
-
 
   app.listen(port, () => {
     console.log(`Server is running at http://localhost:${port}`);
