@@ -30,3 +30,5 @@ sql
   .catch((err) => {
     console.log("connection to mssql db failed!", err);
   });
+
+  module.exports = config;
