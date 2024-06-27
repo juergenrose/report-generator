@@ -30,27 +30,31 @@ async function fetchParams() {
   const paramList = document.getElementById("paramList");
 
   //check if a valid report is selected
-  if (reportname === "-- reportname --") {
+  if (reportname === "-- Select a report --") {
     paramList.innerHTML = `<p class="error">Please select a valid report.</p>`;
     return;
   }
   try {
     const response = await fetch(`/report/${reportname}`);
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
+    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+    const { parameters } = await response.json();
+    if (Object.keys(parameters).length === 0) {
+      paramList.innerHTML = `<p class="error">No parameters found for ${reportname}.</p>`;
+      return;
     }
-    const data = await response.json();
-    //generate HTML for parameter input fields based on retrieved data
-    const paramInputs = Object.keys(data.parameters)
-      .map(
-        (param) => `
+
+    const paramInputs = Object.keys(parameters)
+      .map((param) => {
+        const { type } = parameters[param];
+        const inputType = type === "date" ? "date" : "text";
+        return `
         <div class="paramInput">
-          <label for="${param}">${param}</label><br>
-          <input type="text" id="${param}" name="${param}" oninput="fetchSuggestions('${reportname}', '${param}', this.value)">
+          <label for="${param}">${param} (${type})</label><br>
+          <input type="${inputType}" id="${param}" name="${param}" oninput="fetchSuggestions('${reportname}', '${param}', this.value)">
           <div id="${param}-results" class="results"></div>
         </div>
-      `
-      )
+      `;
+      })
       .join("");
     //populate the parameter list with generated input fields
     paramList.innerHTML = paramInputs;
@@ -69,13 +73,14 @@ async function showJsonOutput(event) {
   const form = document.getElementById("reportForm");
   const jsonOutput = document.getElementById("jsonOutput");
   //check if a valid report is selected
-  if (reportname === "-- reportname --") {
+  if (reportname === "-- Select a report --") {
     document.getElementById(
       "paramList"
     ).innerHTML = `<p class="error">Please select a valid report before generating.</p>`;
     jsonOutput.style.display = "none";
     return;
   }
+
   try {
     //create a query string from the form data
     const params = new URLSearchParams(new FormData(form)).toString();
@@ -108,7 +113,7 @@ async function downloadReport(event) {
   const format = document.getElementById("format").value;
   const form = document.getElementById("reportForm");
   //Validate selected report name and format
-  if (!reportname || reportname === "-- reportname --" || !format) {
+  if (reportname === "-- Select a report --") {
     document.getElementById(
       "paramList"
     ).innerHTML = `<p class="error">Please select a valid report and format before downloading.</p>`;
@@ -155,33 +160,11 @@ function openTab(evt, tabName) {
   for (let i = 0; i < tablinks.length; i++) {
     tablinks[i].className = tablinks[i].className.replace(" active", "");
   }
-  //show the selected tab content
-  const selectedTab = document.getElementById(tabName);
-  if (selectedTab) {
-    selectedTab.style.display = "block";
-  }
-  //add the "active" class to the clicked tab link
-  if (evt.currentTarget) {
-    evt.currentTarget.className += " active";
-  }
+  document.getElementById(tabName).style.display = "block";
+  evt.currentTarget.className += " active";
 }
 
 //execute code when the DOM content has finished loading
 document.addEventListener("DOMContentLoaded", () => {
-  const firstTab = document.querySelector(".tablinks");
-  //if a tablink element is found, simulate a click on it
-  if (firstTab) {
-    firstTab.click();
-  }
-  //fetch reports data when the DOM is loaded
   fetchReports();
 });
-
-//helper function to check if a variable is an object
-function isObject(variable) {
-  /* check if the variable is not null or undefined and is of type 'object'
-  also, ensure that the variable's constructor is Object (not an instance of a subclass)*/
-  return (
-    variable && typeof variable === "object" && variable.constructor === Object
-  );
-}
