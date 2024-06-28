@@ -1,11 +1,10 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:fo="http://www.w3.org/1999/XSL/Format"
   xmlns:date="http://exslt.org/dates-and-times">
-
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes"/>
   <xsl:namespace-alias stylesheet-prefix="date" result-prefix="date" />
   <xsl:param name="Permalink"/>
-
+  
   <!-- Main template to generate the PDF -->
   <xsl:template match="/">
     <fo:root>
@@ -45,7 +44,7 @@
                 <!-- Include row for permalink -->
                 <fo:table-row>
                   <fo:table-cell number-columns-spanned="3">
-                    <fo:block font-size="10pt" font-style="italic" text-align="center" margin-top="3mm">
+                    <fo:block font-size="10pt" font-style="italic" text-align="center" margin-top="5mm">
                       <fo:basic-link external-destination="{$Permalink}">
                         <xsl:value-of select="$Permalink"/>
                       </fo:basic-link>
@@ -58,41 +57,44 @@
           <!-- Table block for report data -->
           <fo:table>
             <fo:table-body>
-              <xsl:apply-templates/>
+              <xsl:apply-templates select="//*[starts-with(name(), 'record_')]"/>
             </fo:table-body>
           </fo:table>
         </fo:flow>
       </fo:page-sequence>
     </fo:root>
   </xsl:template>
-
-  <xsl:template match="/*">
-    <xsl:apply-templates/>
-  </xsl:template>
-
-  <!-- Template for each record element -->
+  
+  <!-- Template to match the specific record elements -->
   <xsl:template match="*[starts-with(name(), 'record_')]">
-    <!-- Render the row with the flag and data -->
-
-    <fo:table-row>
+    <fo:table-row border-bottom="1pt solid black" margin-top="2mm">
+      <!-- Table cell for the entire record data except Durchfuehrender -->
       <fo:table-cell>
-        <!-- Block to display the flag image above the data -->
         <fo:block>
-            <xsl:apply-templates/>
+          <xsl:apply-templates select="node()[not(self::Durchfuehrender)]"/>
+        </fo:block>
+      </fo:table-cell>
+      <!-- Table cell for the Durchfuehrender -->
+      <fo:table-cell>
+        <fo:block font-weight="bold" font-size="10pt" margin="4mm" text-align="right">
+         Durchfuehrender:
+          <fo:inline font-weight="normal" font-size="10pt">
+            <xsl:value-of select="Durchfuehrender"/>
+          </fo:inline>
         </fo:block>
       </fo:table-cell>
     </fo:table-row>
   </xsl:template>
-  <!-- Template to match any other elements -->
+  
+  <!-- Template to match any other elements except Durchfuehrender -->
   <xsl:template match="*">
     <fo:block margin="4mm" text-align="left">
       <fo:inline font-weight="bold" font-size="10pt">
         <xsl:value-of select="concat(name(), ': ')"/>
       </fo:inline>
-      <fo:inline margin-top="2mm" font-size="10pt">
+      <fo:inline margin-top="3mm" font-size="10pt">
         <xsl:value-of select="."/>
       </fo:inline>
     </fo:block>
   </xsl:template>
-
 </xsl:stylesheet>

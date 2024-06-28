@@ -1,12 +1,10 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:fo="http://www.w3.org/1999/XSL/Format"
   xmlns:date="http://exslt.org/dates-and-times">
-
   <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes"/>
   <xsl:namespace-alias stylesheet-prefix="date" result-prefix="date" />
   <xsl:param name="CountryCode"/>
   <xsl:param name="Permalink"/>
-
   <!-- Main template to generate the PDF -->
   <xsl:template match="/">
     <fo:root>
@@ -46,7 +44,7 @@
                 <!-- Include row for permalink -->
                 <fo:table-row>
                   <fo:table-cell number-columns-spanned="3">
-                    <fo:block font-size="10pt" font-style="italic" text-align="center" margin-top="3mm">
+                    <fo:block font-size="10pt" font-style="italic" text-align="center" margin-top="5mm">
                       <fo:basic-link external-destination="{$Permalink}">
                         <xsl:value-of select="$Permalink"/>
                       </fo:basic-link>
@@ -66,15 +64,12 @@
       </fo:page-sequence>
     </fo:root>
   </xsl:template>
-
   <xsl:template match="/*">
     <xsl:apply-templates/>
   </xsl:template>
-
   <!-- Template for each record element -->
   <xsl:template match="*[starts-with(name(), 'record_')]">
     <!-- Render the row with the flag and data -->
-
     <fo:table-row>
       <fo:table-cell>
         <!-- Block to display the flag image above the data -->
@@ -104,5 +99,4 @@
       </fo:inline>
     </fo:block>
   </xsl:template>
-
 </xsl:stylesheet>
