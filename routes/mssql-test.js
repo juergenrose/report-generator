@@ -72,12 +72,12 @@ async function getColumnTypes(columns) {
 
   if (columns.length === 0) {
     console.warn(`No columns specified. Skipping column type fetching.`);
-    return columnTypes; 
+    return columnTypes;
   }
 
   try {
     //iterate over predefinedQueries to get unique table names
-    const tableNames = [...new Set(predefinedQueries.map(q => q.tableName))];
+    const tableNames = [...new Set(predefinedQueries.map((q) => q.tableName))];
 
     //loop through each table name and fetch column types
     for (let tableName of tableNames) {
@@ -86,7 +86,9 @@ async function getColumnTypes(columns) {
         SELECT COLUMN_NAME, DATA_TYPE
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_NAME = @tableName
-          AND COLUMN_NAME IN (${columns.map((col, index) => `@col${index}`).join(", ")})
+          AND COLUMN_NAME IN (${columns
+            .map((col, index) => `@col${index}`)
+            .join(", ")})
       `;
 
       /*
@@ -143,13 +145,29 @@ async function getQueryParams() {
   const columnTypes = await getColumnTypes(columns, tableName);
   //construct params object mapping each parameter to its type and marking it as required
   const params = {};
-  predefinedQueries.forEach(({ params: queryParams }) => {
+  predefinedQueries.forEach(({ params: queryParams, tableName }) => {
     queryParams &&
       queryParams.forEach((param) => {
-        params[param] = {
-          type: columnTypes[param] || "",
-          required: true,
-        };
+        if (columnTypes[tableName] && columnTypes[tableName][param]) {
+          //ensure StartDate and EndDate are treated as SmallDateTime types
+          if (param === "StartDate" || param === "EndDate") {
+            params[param] = {
+              type: "Date",
+              required: true,
+            };
+          } else {
+            params[param] = {
+              type: columnTypes[tableName][param],
+              required: true,
+            };
+          }
+        } else {
+          //handle case where column type is not found
+          params[param] = {
+            type: "Undefined",
+            required: true,
+          };
+        }
       });
   });
   return params;
@@ -209,7 +227,7 @@ async function runQuery(params) {
 
     return results;
   } catch (err) {
-    console.error("MySQL Error:", err.sqlMessage);
+    console.error("MS SQL Server Error:", err.sqlMessage);
     const error = {
       data: null,
       error: {
@@ -224,28 +242,15 @@ async function runQuery(params) {
   }
 }
 
-
 async function runReport(params) {
   try {
     const pool = await sql.connect(config);
+    const queryParams = await getQueryParams();
+    console.log("Query parameters fetched:", queryParams);
 
-    //fetch column types for all parameters in 'params'
-    const paramTypes = await getColumnTypes(Object.keys(params));
-
-    // Known SQL types for specific parameters
-    const knownTypes = {
-      StartDate: sql.Date,
-      EndDate: sql.Date,
-      Durchfuehrender: sql.VarChar,
-    };
-
-    //convert StartDate and EndDate to Date objects if provided as strings
-    if (params.StartDate) {
-      params.StartDate = new Date(params.StartDate);
-    }
-    if (params.EndDate) {
-      params.EndDate = new Date(params.EndDate);
-    }
+    // Fetch column types for all parameters in 'params'
+    const paramTypes = await getColumnTypes(Object.keys(queryParams));
+    console.log("Param types fetched:", paramTypes);
 
     //execute all predefined queries concurrently
     const results = await Promise.all(
@@ -267,21 +272,33 @@ async function runReport(params) {
             const paramName = param.substring(1);
 
             //determine SQL type for the parameter
-            let dbType = knownTypes[paramName] || paramTypes[paramName];
+            let dbType = paramTypes[paramName];
             if (!dbType) {
-              throw new Error(`Parameter type not found for: ${paramName}`);
-            }
-
-            //convert dbType from string to SQL type if necessary
-            if (typeof dbType === "string") {
-              dbType = sqlTypeFromDbType(dbType);
+              console.warn(
+                `Unknown type for parameter '${paramName}'. Defaulting to sql.NVarChar.`
+              );
+              dbType = sql.NVarChar; // default to sql.NVarChar if type not found
+            } else {
+              dbType = sqlTypeFromDbType(dbType); //convert dbType from string to SQL type if necessary
             }
 
             //set input parameter for the query execution
             console.log(
               `Setting parameter: ${paramName} with type: ${dbType} and value: ${params[paramName]}`
             );
-            request.input(paramName, dbType, params[paramName]);
+
+            //set the parameter based on its type
+            if (
+              dbType === sql.Date ||
+              dbType === sql.DateTime ||
+              dbType === sql.SmallDateTime
+            ) {
+              //handle Date types separately
+              request.input(paramName, dbType, params[paramName]);
+            } else {
+              //handle other types including default sql.NVarChar
+              request.input(paramName, dbType, params[paramName].toString());
+            }
           });
         }
         //execute the query with the prepared parameters
@@ -300,6 +317,5 @@ async function runReport(params) {
     throw new Error(err.message);
   }
 }
-
 
 module.exports = { runQuery, runReport, getQueryParams, getSuggestions };
