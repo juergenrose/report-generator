@@ -44,8 +44,11 @@
               <option value="csv">CSV</option>
               <option value="pdf">PDF</option>
             </select>
-            <button class="convertBtn" type="submit">Convert</button>
+            <button id="convertBtn" class="convertBtn" type="submit">
+              Convert
+            </button>
           </form>
+          <button id="scanBtn" class="scanBtn" type="button">Scan Code</button>
         </section>
 
         <section class="rightContainer">
@@ -53,6 +56,9 @@
             <a class="tablinks" onclick="openTab(event, 'jsonOutput')">JSON</a>
             <a class="tablinks" onclick="openTab(event, 'csvOutput')">CSV</a>
             <a class="tablinks" onclick="openTab(event, 'pdfOutput')">PDF</a>
+            <a class="tablinks" onclick="openTab(event, 'scannerOutput')"
+              >Scanner</a
+            >
             <form id="downloadForm" onsubmit="downloadReport(event)">
               <button class="downloadBtn" type="submit">Download</button>
             </form>
@@ -80,8 +86,20 @@
               />
             </div>
           </div>
+          <div id="scannerOutput" class="tabcontent">
+            <h2 class="scanHeader">Scan a barcode</h2>
+            <div id="reader"></div>
+            <div id="result"></div>
+            <div id="scannerBtns">
+              <button id="startBtn" class="start">Start Scanning</button>
+              <button id="stopBtn" class="stop">Stop Scanning</button>
+            </div>
+            
+          </div>
         </section>
       </main>
+      <script src="/node_modules/html5-qrcode/html5-qrcode.min.js"></script>
+      <script src="/js/scanner.js"></script>
       <script src="/js/app.js"></script>
       <script src="/js/suggestions.js"></script>
       <script src="/js/converting.js"></script>
