@@ -197,35 +197,3 @@ async function convertToPDF(event) {
   }
 }
 
-//tab navigation
-function openTab(evt, tabName) {
-  //hide all tab content elements
-  const tabcontent = document.getElementsByClassName("tabcontent");
-  for (let i = 0; i < tabcontent.length; i++) {
-    tabcontent[i].style.display = "none";
-  }
-  //remove 'active' class from all tab links
-  const tablinks = document.getElementsByClassName("tablinks");
-  for (let i = 0; i < tablinks.length; i++) {
-    tablinks[i].className = tablinks[i].className.replace(" active", "");
-  }
-  //show the selected tab content element
-  const selectedTab = document.getElementById(tabName);
-  if (selectedTab) {
-    selectedTab.style.display = "block";
-  }
-   //add 'active' class to the clicked tab link
-  if (evt.currentTarget) {
-    evt.currentTarget.className += " active";
-  }
-}
-
-// Fetch reports when the DOM content has finished loading
-document.addEventListener("DOMContentLoaded", () => {
-  // automatically click the first tab when the page loads
-  const firstTab = document.querySelector(".tablinks");
-  if (firstTab) {
-    firstTab.click();
-  }
-  fetchReports();
-});
