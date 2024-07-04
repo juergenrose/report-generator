@@ -11,6 +11,7 @@ const { handleXmlReport, handleCsvReport } = require("./convert-report");
 //middleware for static files and view engine
 app.use(cors());
 app.use(express.static("public"));
+app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "html");
 
