@@ -5,7 +5,7 @@ body {
 }
 
 .content {
-  width: 90%;
+  width: 95%;
   margin: auto;
 }
 
@@ -137,6 +137,8 @@ select:hover {
   align-items: center;
   margin-left: auto;
   justify-content: flex-end;
+  box-sizing: border-box;
+
 }
 
 .downloadBtn {
@@ -146,7 +148,7 @@ select:hover {
   color: #fafafa;
   border: 0;
   border-radius: 4px;
-  width: auto;
+  width: 100%;
   margin: 10px;
 }
 
@@ -167,8 +169,25 @@ select:hover {
 
 @media (max-width: 768px) {
   .rightContainer {
-    margin-left: 0;
+    margin: auto;
     margin-top: 2em;
+  }
+  
+  #downloadForm {
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 0 2em 0 2em;
+  }
+  
+  .downloadBtn {
+    width: 100%;
+    margin: 10px 0;
+  }
+  
+  .tabs {
+    justify-content: center;
   }
 }
 
@@ -191,15 +210,16 @@ select:hover {
   width: auto;
   min-width: 100px;
   font-size: 16px;
+  background-color: #f3f3f3;
   flex: none; /* ensure tabs don't stretch */
 }
 
 .tablinks:hover {
-  background-color: #f3f3f3;
+  background-color: #e6e6e6;
 }
 
 .tablinks.active {
-  background-color: #e6e6e6;
+  background-color: #d6d6d6;
   font-weight: 600;
 }
 
@@ -212,7 +232,6 @@ select:hover {
   font-size: 14px;
   flex-grow: 1;
 }
-
 /*convert form*/
 #convertForm {
   display: flexbox;
@@ -276,6 +295,7 @@ select:hover {
 .error {
   background-color: #db3333;
   color: #fafafa;
+  margin: 1em;
   padding: 1em;
   border: 0;
   border-radius: 4px;
@@ -287,7 +307,7 @@ select:hover {
 }
 
 #csvData table {
-  width: 100%;
+  max-width: 100%;
   border-collapse: collapse;
   border-radius: 0 0 4px 4px;
 }
@@ -315,4 +335,100 @@ td {
 embed {
   border: 0;
   border-radius: 4px;
+}
+.scanHeader{
+  text-align: center;
+}
+
+#scannerOutput {
+  display: none; /* Initially hide the scanner output */
+}
+
+#reader {
+  max-width: 600px;
+  margin: auto;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#scannerBtns {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  max-width: 100%;
+  border-radius: 4px;
+  color: #fafafa;
+  margin: auto;
+}
+.start, .stop {
+  padding: 8px 20px;
+  font-size: 16px;
+  margin: 5px;
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  color: #fafafa;
+}
+.start {
+  background-color: #478d53;
+}
+.start:hover {
+  background-color: #45814f;
+}
+.stop {
+  background-color: #db3333;
+}
+.stop:hover {
+  background-color: #cf2e2e;
+}
+
+#result {
+  max-width: 600px;
+  margin: auto;
+  text-align: center;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+#result a{
+  color: #fafafa;
+  font-size: 16px;
+}
+#result .retryLink {
+  padding: 8px 20px;
+  font-size: 16px;
+  background-color: #777;
+  color: #fafafa;
+  border: 1px solid #fafafa;
+  border-radius: 4px;
+  margin: 1em;
+}
+#result .retryLink:hover {
+  background-color: #707070;
+}
+#result .codeInfo {
+  margin-top: 1em;
+  font-size: 16px;
+  color: #fafafa;
+}
+#result .resultLink {
+  color: #fafafa;
+}
+.scanBtn {
+  padding: 8px 20px;
+  font-size: 16px;
+  background-color: #666;
+  color: #fafafa;
+  border: 0;
+  border-radius: 4px;
+  width: 100%;
+  margin-top: 1em;
+}
+
+.scanBtn:hover {
+  background-color: #777;
+  cursor: pointer;
 }
