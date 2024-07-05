@@ -12,7 +12,7 @@ body {
 /*navbar settings*/
 nav {
   margin-bottom: 2em;
-  border-bottom: 1px solid #00000030;
+  border-bottom: 1px solid #0000001e;
 }
 
 ul {
@@ -39,15 +39,15 @@ li {
 .apiLink a {
   text-decoration: none;
   float: right;
-  padding: 10px;
-  background-color: #111;
+  padding: 10px 20px;
+  background-color: #222;
   color: #fafafa;
   border: 0;
-  border-radius: 4px;
+  border-radius: 25px;
 }
 
 .apiLink a:hover {
-  background-color: #222;
+  background-color: #333;
 }
 
 /*main container settings*/
@@ -71,7 +71,7 @@ li {
   background-color: #fafafa;
   padding: 2em;
   border: 0;
-  border-radius: 4px;
+  border-radius: 25px;
   box-shadow: 0 4px 8px 0 #00000033, 0 6px 20px 0 #00000030;
   box-sizing: border-box;
 }
@@ -82,9 +82,9 @@ label {
 }
 
 input[type="text"] {
-  padding: 8px;
+  padding: 10px;
   border: 0;
-  border-radius: 4px;
+  border-radius: 25px;
   background-color: #e6e6e6;
   font-size: 14px;
   width: 100%;
@@ -97,10 +97,10 @@ input:hover {
 }
 
 select {
-  padding: 8px;
+  padding: 10px;
   background-color: #e6e6e6;
   border: 0;
-  border-radius: 4px;
+  border-radius: 25px;
   font-size: 14px;
   text-align: center;
   width: 100%;
@@ -116,12 +116,12 @@ select:hover {
 
 /*button settings*/
 .generateBtn {
-  padding: 8px 20px;
+  padding: 10px 20px;
   font-size: 16px;
   background-color: #478d53;
   color: #fafafa;
-  border: 0;
-  border-radius: 4px;
+  border: none;
+  border-radius: 25px;
   width: 100%;
   margin-bottom: 1em;
 }
@@ -138,22 +138,21 @@ select:hover {
   margin-left: auto;
   justify-content: flex-end;
   box-sizing: border-box;
-
 }
 
 .downloadBtn {
-  padding: 8px 20px;
+  padding: 10px 20px;
   font-size: 16px;
-  background-color: #e78b35;
+  background-color: #707070;
   color: #fafafa;
   border: 0;
-  border-radius: 4px;
+  border-radius: 25px;
   width: 100%;
   margin: 10px;
 }
 
 .downloadBtn:hover {
-  background-color: #d48132;
+  background-color: #777;
   cursor: pointer;
 }
 
@@ -163,37 +162,39 @@ select:hover {
   flex-direction: column;
   margin-left: 2em;
   flex-grow: 1;
-  border-radius: 4px;
+  border-radius: 25px;
+
   box-shadow: 0 4px 8px 0 #00000033, 0 6px 20px 0 #00000030;
 }
 
 @media (max-width: 768px) {
   .rightContainer {
-    margin: auto;
+    margin-left: 0;
     margin-top: 2em;
   }
-  
+
   #downloadForm {
     justify-content: center;
     align-items: center;
     width: 100%;
     box-sizing: border-box;
-    margin: 0 2em 0 2em;
   }
-  
+
   .downloadBtn {
     width: 100%;
-    margin: 10px 0;
+    margin: 1em 2em;
   }
-  
+
   .tabs {
+    margin-top: 1em;
     justify-content: center;
+    flex-direction: column;
   }
 }
 
 .tabs {
   display: flex;
-  border-radius: 4px 4px 0 0;
+  border-radius: 25px;
   width: 100%;
   background-color: #fafafa;
   flex-wrap: wrap; /*allow tabs to wrap on smaller screens */
@@ -201,37 +202,40 @@ select:hover {
 
 .tablinks {
   color: #111;
-  padding: 12px;
-  margin: 10px;
+  padding: 10px;
+  margin: 5px;
+  border-radius: 25px;
   border: none;
-  border-radius: 4px;
   cursor: pointer;
   text-align: center;
   width: auto;
   min-width: 100px;
-  font-size: 16px;
-  background-color: #f3f3f3;
+  font-size: 18px;
+  background-color: #fafafa;
   flex: none; /* ensure tabs don't stretch */
 }
 
 .tablinks:hover {
-  background-color: #e6e6e6;
+  color: #888;
 }
 
 .tablinks.active {
-  background-color: #d6d6d6;
-  font-weight: 600;
+  background-color: #e6e6e6;
+  color: #111;
+  margin: auto;
+  width: 40%;
 }
 
 .tabcontent {
   display: none;
-  padding: 2em;
+  padding: 3em;
   background-color: #333;
   color: #fafafa;
-  border-radius: 0 0 4px 4px;
+  border-radius: 25px ;
   font-size: 14px;
   flex-grow: 1;
 }
+
 /*convert form*/
 #convertForm {
   display: flexbox;
@@ -248,12 +252,12 @@ select:hover {
 }
 
 .convertBtn {
-  padding: 8px 20px;
+  padding: 10px 20px;
   font-size: 16px;
   background-color: #222;
   color: #fafafa;
   border: 0;
-  border-radius: 4px;
+  border-radius: 25px;
   width: 100%;
   margin-top: 1em;
 }
@@ -275,14 +279,14 @@ select:hover {
   position: absolute;
   background-color: #fafafa;
   border: none;
-  border-radius: 4px;
+  border-radius: 25px;
   max-height: 200px;
   overflow-y: auto;
   width: auto;
   box-shadow: 0 4px 8px 0 #00000033, 0 6px 20px 0 #00000030;
 }
 .results p {
-  padding: 8px 12px;
+  padding: 15px 20px;
   margin: 0;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -334,10 +338,7 @@ td {
 /*PDF preview*/
 embed {
   border: 0;
-  border-radius: 4px;
-}
-.scanHeader{
-  text-align: center;
+  border-radius: 25px;
 }
 
 #scannerOutput {
@@ -359,27 +360,32 @@ embed {
   align-items: center;
   text-align: center;
   max-width: 100%;
-  border-radius: 4px;
   color: #fafafa;
   margin: auto;
 }
-.start, .stop {
-  padding: 8px 20px;
-  font-size: 16px;
+.start,
+.stop,
+#scanAnotherBtn {
+  padding: 10px 20px;
   margin: 5px;
-  cursor: pointer;
+  font-size: 16px;
   border: none;
-  border-radius: 4px;
+  border-radius: 25px;
+  cursor: pointer;
   color: #fafafa;
 }
-.start {
+.start,
+#scanAnotherBtn {
   background-color: #478d53;
+  border: 1px solid #60b46e;
 }
 .start:hover {
   background-color: #45814f;
 }
 .stop {
+  margin-top: 1em;
   background-color: #db3333;
+  border: 1px solid #ff4a4a;
 }
 .stop:hover {
   background-color: #cf2e2e;
@@ -389,41 +395,30 @@ embed {
   max-width: 600px;
   margin: auto;
   text-align: center;
-  display: flex;
+  display: flexbox;
   justify-content: center;
   align-items: center;
 }
-#result a{
-  color: #fafafa;
+#result a {
+  color: #e6e6e6;
   font-size: 16px;
 }
-#result .retryLink {
-  padding: 8px 20px;
-  font-size: 16px;
-  background-color: #777;
-  color: #fafafa;
-  border: 1px solid #fafafa;
-  border-radius: 4px;
-  margin: 1em;
-}
-#result .retryLink:hover {
-  background-color: #707070;
-}
-#result .codeInfo {
+#result p {
   margin-top: 1em;
   font-size: 16px;
   color: #fafafa;
 }
-#result .resultLink {
-  color: #fafafa;
+#result h2 {
+  font-size: 24px;
+  color: #57a864;
 }
 .scanBtn {
-  padding: 8px 20px;
+  padding: 10px 25px;
   font-size: 16px;
   background-color: #666;
   color: #fafafa;
-  border: 0;
-  border-radius: 4px;
+  border: none;
+  border-radius: 25px;
   width: 100%;
   margin-top: 1em;
 }
@@ -431,4 +426,9 @@ embed {
 .scanBtn:hover {
   background-color: #777;
   cursor: pointer;
+}
+
+#scanHeader{
+  font-size: 24px;
+  text-align: center;
 }
