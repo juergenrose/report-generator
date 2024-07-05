@@ -1,11 +1,12 @@
 const startBtn = document.getElementById("startBtn");
 const stopBtn = document.getElementById("stopBtn");
-const uploadBtn = document.getElementById("uploadBtn");
-const fileInput = document.getElementById("fileInput");
 const result = document.getElementById("result");
+const scanHeader = document.getElementById("scanHeader");
 const scanner = new Html5Qrcode("reader");
 
-startBtn.addEventListener("click", () => {
+startBtn.addEventListener("click", startScanning);
+
+function startScanning() {
   scanner
     .start(
       { facingMode: "environment" }, // or { facingMode: "user" } for front camera
@@ -17,14 +18,23 @@ startBtn.addEventListener("click", () => {
         // Handle QR Code result
         document.getElementById("result").innerHTML = `
         <h2>Success!</h2>
-        <p>Code information</p>
-        <p><a href="${result}">${result}</a></p>
+        <p>Code information:</p>
+        <p><a href="${qrCodeMessage}">${qrCodeMessage}</a></p>
+        <button id="scanAnotherBtn">Scan another barcode</button>
         `;
         scanner.stop();
-        document.getElementById("reader").remove();
-        document.getElementById("startBtn").innerHTML="Retry";
-        startBtn.style.display = "block";
+        document.getElementById("reader").style.display = "none";
+        scanHeader.style.display = "none";
         stopBtn.style.display = "none";
+
+        document
+          .getElementById("scanAnotherBtn")
+          .addEventListener("click", () => {
+            document.getElementById("reader").style.display = "block";
+            startBtn.innerHTML = "Start Scanning";
+            result.innerHTML = "";
+            startScanning();
+          });
       },
       (errorMessage) => {
         console.log(`QR Code no longer in front of camera.`);
@@ -37,7 +47,7 @@ startBtn.addEventListener("click", () => {
     .catch((err) => {
       console.error(`Unable to start scanning, error: ${err}`);
     });
-});
+}
 
 stopBtn.addEventListener("click", () => {
   scanner
@@ -46,13 +56,12 @@ stopBtn.addEventListener("click", () => {
       console.log("Scanning stopped.");
       startBtn.style.display = "block";
       stopBtn.style.display = "none";
+      scanHeader.style.display = "block";
     })
     .catch((err) => {
       console.error(`Unable to stop scanning, error: ${err}`);
     });
 });
-
-
 
 document.addEventListener("DOMContentLoaded", () => {
   // Automatically click the first tab when the page loads
