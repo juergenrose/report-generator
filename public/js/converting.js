@@ -30,7 +30,6 @@ function generateCsvContent(data) {
   return `${headers.join(",")}\n${csvRows.join("\n")}`;
 }
 
-
 //function to convert CSV content to an HTML table
 function csvToHtmlTable(csv) {
   //trim whitespace, split CSV into rows
@@ -155,7 +154,7 @@ async function convertToPDF(event) {
   const params = new URLSearchParams(formData).toString(); //convert form data to URL parameters
 
   try {
-     //find and parse JSON data from the JSON output section
+    //find and parse JSON data from the JSON output section
     const jsonDataElement = jsonOutput.querySelector("pre");
     if (!jsonDataElement) {
       throw new Error("No JSON data found");
@@ -196,4 +195,3 @@ async function convertToPDF(event) {
     pdfOutput.innerHTML = `<p class="error">Error generating PDF: ${error.message}. Please try again.</p>`;
   }
 }
-

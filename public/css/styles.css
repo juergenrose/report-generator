@@ -231,7 +231,7 @@ select:hover {
   padding: 3em;
   background-color: #333;
   color: #fafafa;
-  border-radius: 25px ;
+  border-radius: 25px;
   font-size: 14px;
   flex-grow: 1;
 }
@@ -428,7 +428,7 @@ embed {
   cursor: pointer;
 }
 
-#scanHeader{
+#scanHeader {
   font-size: 24px;
   text-align: center;
 }
