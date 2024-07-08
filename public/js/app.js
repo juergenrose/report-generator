@@ -149,19 +149,29 @@ async function downloadReport(event) {
 }
 
 //function to handle tab navigation
-function openTab(evt, tabName) {
+function openTab(event, tabName) {
   //get all elements with class "tabcontent" and hide them
   const tabcontent = document.getElementsByClassName("tabcontent");
   for (let i = 0; i < tabcontent.length; i++) {
     tabcontent[i].style.display = "none";
-  }
+  }  
   //get all elements with class "tablinks" and remove the "active" class
   const tablinks = document.getElementsByClassName("tablinks");
   for (let i = 0; i < tablinks.length; i++) {
     tablinks[i].className = tablinks[i].className.replace(" active", "");
+  }  
+  //show the current tab and add an "active" class to the button that opened the tab
+  const tabElement = document.getElementById(tabName);
+  if (tabElement) {
+    tabElement.style.display = "block";
+  } else {
+    console.error(`Tab element with id "${tabName}" not found.`);
   }
-  document.getElementById(tabName).style.display = "block";
-  evt.currentTarget.className += " active";
+  if (event.currentTarget) {
+    event.currentTarget.className += " active";
+  } else {
+    console.error("Event currentTarget is null or undefined.");
+  }
 }
 
 //execute code when the DOM content has finished loading
