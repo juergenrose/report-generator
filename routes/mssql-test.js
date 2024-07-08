@@ -32,12 +32,20 @@ const predefinedQueries = [
   },
 ];
 
+//mapping parameter names to column names
+const paramColumnMapping = {
+  StartDate: "Datum",
+  EndDate: "Datum",
+  Durchfuehrender: "Durchfuehrender",
+};
+
 //function to map database type (dbType) to mssql data types
 function sqlTypeFromDbType(dbType) {
   if (!dbType) {
     throw new Error(`Database type (dbType) cannot be null or undefined`);
   }
-  switch (dbType.toLowerCase()) {
+  const lowerDbType = dbType.toLowerCase();
+  switch (lowerDbType) {
     case "int":
       return sql.Int;
     case "bigint":
@@ -46,29 +54,63 @@ function sqlTypeFromDbType(dbType) {
       return sql.SmallInt;
     case "tinyint":
       return sql.TinyInt;
+    case "bit":
+      return sql.Bit;
     case "varchar":
       return sql.VarChar(sql.MAX);
     case "nvarchar":
       return sql.NVarChar(sql.MAX);
-    case "smalldatetime":
-      return sql.SmallDateTime;
-    case "datetime":
-      return sql.DateTime;
+    case "char":
+      return sql.Char;
+    case "nchar":
+      return sql.NChar;
+    case "text":
+      return sql.Text;
+    case "ntext":
+      return sql.NText;
+    case "binary":
+      return sql.Binary;
+    case "varbinary":
+      return sql.VarBinary;
+    case "image":
+      return sql.Image;
+    case "uniqueidentifier":
+      return sql.UniqueIdentifier;
     case "date":
       return sql.Date;
+    case "datetime":
+      return sql.DateTime;
+    case "smalldatetime":
+      return sql.SmallDateTime;
+    case "datetime2":
+      return sql.DateTime2;
+    case "datetimeoffset":
+      return sql.DateTimeOffset;
+    case "time":
+      return sql.Time;
     case "float":
       return sql.Float;
+    case "real":
+      return sql.Real;
     case "decimal":
       return sql.Decimal;
+    case "numeric":
+      return sql.Numeric;
+    case "money":
+      return sql.Money;
+    case "smallmoney":
+      return sql.SmallMoney;
+    case "boolean":
+      return sql.Bit; //use sql.Bit for boolean types
     default:
-      console.error(`Unknown dbType: ${dbType}`);
-      throw new Error(`Unknown dbType: ${dbType}`);
+      console.warn(`Unknown dbType: ${dbType}. Defaulting to sql.NVarChar.`);
+      return sql.NVarChar; // default to sql.NVarChar for unknown types
   }
 }
 
 //function to fetch column types for specified columns from the database
-async function getColumnTypes(columns) {
-  const columnTypes = {}; //object to store column types grouped by table name
+async function getColumnTypes(columns, tableName) {
+  const columnTypes = {};
 
   if (columns.length === 0) {
     console.warn(`No columns specified. Skipping column type fetching.`);
@@ -76,49 +118,32 @@ async function getColumnTypes(columns) {
   }
 
   try {
-    //iterate over predefinedQueries to get unique table names
-    const tableNames = [...new Set(predefinedQueries.map((q) => q.tableName))];
+    const pool = await sql.connect(config);
 
-    //loop through each table name and fetch column types
-    for (let tableName of tableNames) {
-      //construct SQL query to fetch column names and data types
+    //fetch column types from INFORMATION_SCHEMA.COLUMNS
+    for (let col of columns) {
       const query = `
-        SELECT COLUMN_NAME, DATA_TYPE
+        SELECT DATA_TYPE
         FROM INFORMATION_SCHEMA.COLUMNS
         WHERE TABLE_NAME = @tableName
-          AND COLUMN_NAME IN (${columns
-            .map((col, index) => `@col${index}`)
-            .join(", ")})
+          AND COLUMN_NAME = @columnName
       `;
-
-      /*
-      console.log(`Fetching column types for table: ${tableName}`);
-      console.log(`Columns: ${columns.join(", ")}`);
-      console.log(`Constructed query: ${query}`);
-      */
-
-      const pool = await sql.connect(config);
       const request = pool.request();
-
-      //bind parameters for the SQL query
       request.input("tableName", sql.NVarChar, tableName);
-      columns.forEach((col, index) => {
-        request.input(`col${index}`, sql.NVarChar, col);
-      });
+      request.input("columnName", sql.NVarChar, col);
 
       //execute the query to fetch column types
       const result = await request.query(query);
-
-      //process query result to populate columnTypes object
-      result.recordset.forEach((row) => {
-        if (!columnTypes[tableName]) {
-          columnTypes[tableName] = {}; //initialize object for table if not exists
-        }
-        columnTypes[tableName][row.COLUMN_NAME] = row.DATA_TYPE; // Store column name and data type
-      });
-
-      console.log("Fetched column types:", columnTypes);
+      if (result.recordset.length > 0) {
+        const dbType = result.recordset[0].DATA_TYPE;
+        columnTypes[col] = dbType.toLowerCase();
+      } else {
+        console.warn(`Column '${col}' not found in table '${tableName}'.`);
+        columnTypes[col] = "Undefined";
+      }
     }
+
+    console.log("Fetched column types:", columnTypes);
     return columnTypes;
   } catch (err) {
     console.error("Error fetching column types:", err.message);
@@ -132,8 +157,9 @@ async function getQueryParams() {
   const columns = predefinedQueries.reduce((acc, { params: queryParams }) => {
     queryParams &&
       queryParams.forEach((param) => {
-        if (!acc.includes(param)) {
-          acc.push(param);
+        const columnName = paramColumnMapping[param];
+        if (columnName && !acc.includes(columnName)) {
+          acc.push(columnName);
         }
       });
     return acc;
@@ -148,19 +174,12 @@ async function getQueryParams() {
   predefinedQueries.forEach(({ params: queryParams, tableName }) => {
     queryParams &&
       queryParams.forEach((param) => {
-        if (columnTypes[tableName] && columnTypes[tableName][param]) {
-          //ensure StartDate and EndDate are treated as SmallDateTime types
-          if (param === "StartDate" || param === "EndDate") {
-            params[param] = {
-              type: "Date",
-              required: true,
-            };
-          } else {
-            params[param] = {
-              type: columnTypes[tableName][param],
-              required: true,
-            };
-          }
+        const columnName = paramColumnMapping[param];
+        if (columnTypes[columnName]) {
+          params[param] = {
+            type: columnTypes[columnName],
+            required: true,
+          };
         } else {
           //handle case where column type is not found
           params[param] = {
