@@ -46,7 +46,12 @@ async function fetchParams() {
     const paramInputs = Object.keys(parameters)
       .map((param) => {
         const { type } = parameters[param];
-        const inputType = type === "date" ? "date" : "text";
+        const inputType =
+          type.toLowerCase() === "date" ||
+          type.toLowerCase() === "smalldatetime" ||
+          type.toLowerCase() === "datetime"
+            ? "date"
+            : "text";
         return `
         <div class="paramInput">
           <label for="${param}">${param} (${type})</label><br>
@@ -154,12 +159,12 @@ function openTab(event, tabName) {
   const tabcontent = document.getElementsByClassName("tabcontent");
   for (let i = 0; i < tabcontent.length; i++) {
     tabcontent[i].style.display = "none";
-  }  
+  }
   //get all elements with class "tablinks" and remove the "active" class
   const tablinks = document.getElementsByClassName("tablinks");
   for (let i = 0; i < tablinks.length; i++) {
     tablinks[i].className = tablinks[i].className.replace(" active", "");
-  }  
+  }
   //show the current tab and add an "active" class to the button that opened the tab
   const tabElement = document.getElementById(tabName);
   if (tabElement) {
