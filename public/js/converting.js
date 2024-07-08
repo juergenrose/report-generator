@@ -92,6 +92,7 @@ async function convertJsonToCsv(event) {
     //display the HTML table
     csvOutput.innerHTML = tableHTML;
     //switch to the CSV output tab
+    const event = { currentTarget: document.querySelector(".tablinks[onclick=\"openTab(event, 'csvOutput')\"]")};
     openTab(event, "csvOutput");
   } catch (error) {
     //log and display the error if any occurs during the conversion
@@ -189,6 +190,7 @@ async function convertToPDF(event) {
     console.log("PDF URL:", pdfUrl);
 
     pdfOutput.innerHTML = `<embed src="${pdfUrl}" type="application/pdf" width="100%" height="800px" />`;
+    const event = { currentTarget: document.querySelector(".tablinks[onclick=\"openTab(event, 'pdfOutput')\"]")};
     openTab(event, "pdfOutput");
   } catch (error) {
     console.error("Error generating PDF:", error);
