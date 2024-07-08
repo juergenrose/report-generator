@@ -67,24 +67,25 @@ li {
   display: flex;
   flex-direction: column;
   width: 100%;
+  min-width: 400px;
   max-width: 400px;
   background-color: #fafafa;
   padding: 2em;
   border: 0;
-  border-radius: 25px;
+  border-radius: 10px;
   box-shadow: 0 4px 8px 0 #00000033, 0 6px 20px 0 #00000030;
   box-sizing: border-box;
 }
 
 label {
   font-size: 16px;
-  margin: 0.5em 0;
+  margin: 1em;
 }
 
 input[type="text"] {
   padding: 10px;
   border: 0;
-  border-radius: 25px;
+  border-radius: 10px;
   background-color: #e6e6e6;
   font-size: 14px;
   width: 100%;
@@ -100,12 +101,12 @@ select {
   padding: 10px;
   background-color: #e6e6e6;
   border: 0;
-  border-radius: 25px;
+  border-radius: 10px;
   font-size: 14px;
   text-align: center;
   width: 100%;
+  appearance: none;
 }
-
 select:hover {
   background-color: #d6d6d6;
 }
@@ -116,12 +117,12 @@ select:hover {
 
 /*button settings*/
 .generateBtn {
-  padding: 10px 20px;
+  padding: 10px 22px;
   font-size: 16px;
   background-color: #478d53;
   color: #fafafa;
   border: none;
-  border-radius: 25px;
+  border-radius: 10px;
   width: 100%;
   margin-bottom: 1em;
 }
@@ -141,7 +142,7 @@ select:hover {
 }
 
 .downloadBtn {
-  padding: 10px 20px;
+  padding: 12px 25px;
   font-size: 16px;
   background-color: #707070;
   color: #fafafa;
@@ -162,7 +163,7 @@ select:hover {
   flex-direction: column;
   margin-left: 2em;
   flex-grow: 1;
-  border-radius: 25px;
+  border-radius: 10px;
 
   box-shadow: 0 4px 8px 0 #00000033, 0 6px 20px 0 #00000030;
 }
@@ -186,7 +187,7 @@ select:hover {
   }
 
   .tabs {
-    margin-top: 1em;
+    margin: auto;
     justify-content: center;
     flex-direction: column;
   }
@@ -194,7 +195,7 @@ select:hover {
 
 .tabs {
   display: flex;
-  border-radius: 25px;
+  border-radius: 4px 4px 0 0;
   width: 100%;
   background-color: #fafafa;
   flex-wrap: wrap; /*allow tabs to wrap on smaller screens */
@@ -202,36 +203,31 @@ select:hover {
 
 .tablinks {
   color: #111;
-  padding: 10px;
-  margin: 5px;
-  border-radius: 25px;
+  padding: 1em;
   border: none;
   cursor: pointer;
   text-align: center;
-  width: auto;
-  min-width: 100px;
-  font-size: 18px;
-  background-color: #fafafa;
+  border-radius: 4px 4px 0 0;
+  width: auto; 
+  min-width: 100px; 
+  font-size: 16px; 
   flex: none; /* ensure tabs don't stretch */
 }
 
 .tablinks:hover {
-  color: #888;
+  background-color: #d6d6d6;
 }
-
 .tablinks.active {
-  background-color: #e6e6e6;
-  color: #111;
-  margin: auto;
-  width: 40%;
+  background-color: #222;
+  font-weight: 700;
+  color: #fafafa;
 }
-
 .tabcontent {
   display: none;
-  padding: 3em;
-  background-color: #333;
+  padding: 2em;
+  background-color: #222;
   color: #fafafa;
-  border-radius: 25px;
+  border-radius: 0 0 4px 4px;
   font-size: 14px;
   flex-grow: 1;
 }
@@ -252,12 +248,12 @@ select:hover {
 }
 
 .convertBtn {
-  padding: 10px 20px;
+  padding: 10px 22px;
   font-size: 16px;
   background-color: #222;
   color: #fafafa;
   border: 0;
-  border-radius: 25px;
+  border-radius: 10px;
   width: 100%;
   margin-top: 1em;
 }
@@ -276,10 +272,9 @@ select:hover {
 /* suggestions settings */
 .results {
   display: hidden;
-  position: absolute;
   background-color: #fafafa;
   border: none;
-  border-radius: 25px;
+  border-radius: 10px;
   max-height: 200px;
   overflow-y: auto;
   width: auto;
@@ -288,11 +283,27 @@ select:hover {
 .results p {
   padding: 15px 20px;
   margin: 0;
-  cursor: pointer;
-  transition: background-color 0.2s;
 }
 .results p:hover {
   background-color: #e6e6e6;
+}
+
+/* date input settings */
+input[type="date"] {
+  padding: 10px;
+  border: 0;
+  border-radius: 10px;
+  background-color: #e6e6e6;
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  width: 100%;
+  margin-bottom: 1em;
+  box-sizing: border-box;
+}
+
+input[type="date"]:hover {
+  background-color: #d6d6d6;
+  cursor: text;
 }
 
 /*error settings*/
@@ -338,7 +349,7 @@ td {
 /*PDF preview*/
 embed {
   border: 0;
-  border-radius: 25px;
+  border-radius: 10px;
 }
 
 #scannerOutput {
@@ -355,6 +366,7 @@ embed {
 }
 #scannerBtns {
   display: flex;
+  padding: 15px 25px;
   flex-direction: column;
   justify-content: center;
   align-items: center;
@@ -366,7 +378,7 @@ embed {
 .start,
 .stop,
 #scanAnotherBtn {
-  padding: 10px 20px;
+  padding: 15px 20px;
   margin: 5px;
   font-size: 16px;
   border: none;
@@ -413,12 +425,12 @@ embed {
   color: #57a864;
 }
 .scanBtn {
-  padding: 10px 25px;
+  padding: 10px 22px;
   font-size: 16px;
   background-color: #666;
   color: #fafafa;
   border: none;
-  border-radius: 25px;
+  border-radius: 10px;
   width: 100%;
   margin-top: 1em;
 }
