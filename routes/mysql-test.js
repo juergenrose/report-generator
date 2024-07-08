@@ -1,4 +1,5 @@
 const db = require("../config/mysql_db").promise();
+const mysql = require("mysql2/promise");
 
 //predefined queries
 const predefinedQueries = [
@@ -19,6 +20,30 @@ const predefinedQueries = [
     GROUP BY 
       city.CountryCode, country.Name;`,
     params: ["CountryCode"], //specify the expected parameters
+  },
+  {
+    suggestionParam: "StartDate",
+    suggestionQuery: `SELECT DISTINCT DATE_FORMAT(Datum, '%Y-%m-%d') AS StartDate 
+                      FROM City 
+                      WHERE DATE_FORMAT(Datum, '%Y-%m-%d') LIKE CONCAT(?, '%')`,
+    params: [],
+    tableName: "City",
+  },
+  {
+    suggestionParam: "EndDate",
+    suggestionQuery: `SELECT DISTINCT DATE_FORMAT(Datum, '%Y-%m-%d') AS EndDate 
+                      FROM City 
+                      WHERE DATE_FORMAT(Datum, '%Y-%m-%d') LIKE CONCAT(?, '%')`,
+    params: [],
+    tableName: "City",
+  },
+  {
+    suggestionParam: "CountryCode",
+    suggestionQuery: `SELECT DISTINCT CountryCode 
+                      FROM City 
+                      WHERE CountryCode LIKE CONCAT(?, '%')`,
+    params: [],
+    tableName: "City",
   },
 ];
 
@@ -103,11 +128,13 @@ async function getSuggestions(params) {
       );
     }
     //find the corresponding query for the param
-    const queryObject = predefinedQueries.find((q) => q.params.includes(param));
+    const queryObject = predefinedQueries.find(
+      (q) => q.suggestionParam === param
+    );
     if (!queryObject) {
       throw new Error(`No suggestion query found for parameter: ${param}`);
     }
-    const query = queryObject.query;
+    const query = queryObject.suggestionQuery;
     const values = [`${input}%`]; //adjust to match the first character of input
 
     const [results] = await db.query(query, values);
@@ -149,7 +176,7 @@ async function runQuery(params) {
 }
 
 //function to run the report based on provided parameters
-async function runReport(params) {
+async function runReport(params, reportname) {
   try {
     //extract query parameters
     const queryParams = await getQueryParams();
@@ -168,7 +195,7 @@ async function runReport(params) {
 
     return { data: result, parameters: queryParams };
   } catch (err) {
-    console.error(err);
+    console.error(`Error handling report for ${reportname}:`, err);
     return { data: null, error: err.message };
   }
 }
