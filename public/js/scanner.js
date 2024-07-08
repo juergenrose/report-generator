@@ -14,12 +14,12 @@ function startScanning() {
         fps: 20,
         qrbox: { width: 350, height: 350 },
       },
-      (qrCodeMessage) => {
+      (codeMessage) => {
         // Handle QR Code result
         document.getElementById("result").innerHTML = `
         <h2>Success!</h2>
         <p>Code information:</p>
-        <p><a href="${qrCodeMessage}">${qrCodeMessage}</a></p>
+        <p><a href="${codeMEssage}">${codeMessage}</a></p>
         <button id="scanAnotherBtn">Scan another barcode</button>
         `;
         scanner.stop();
@@ -66,7 +66,7 @@ stopBtn.addEventListener("click", () => {
 document.addEventListener("DOMContentLoaded", () => {
   // Automatically click the first tab when the page loads
   const firstTab = document.querySelector(
-    ".tablinks[onclick=\"openTab(event, 'scannerOutput')\"]"
+    ".tablinks[onclick=\"openTab(event, 'jsonOutput')\"]"
   );
   if (firstTab) {
     firstTab.click();
