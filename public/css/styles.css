@@ -1,4 +1,6 @@
-/*universal settings*/
+/*****************
+*universal styles
+******************/
 body {
   font-family: Arial, Helvetica, sans-serif;
   background-color: #fafafa;
@@ -9,7 +11,9 @@ body {
   margin: auto;
 }
 
-/*navbar settings*/
+/***************
+* navbar styles 
+****************/
 nav {
   margin-bottom: 2em;
   border-bottom: 1px solid #0000001e;
@@ -50,7 +54,9 @@ li {
   background-color: #333;
 }
 
-/*main container settings*/
+/***********************
+* main container styles
+************************/
 .mainContainer {
   display: flex;
   flex-direction: column; /*change to column for better mobile support */
@@ -62,7 +68,9 @@ li {
   }
 }
 
-/*form settings*/
+/*************
+* form styles
+**************/
 .formPart {
   display: flex;
   flex-direction: column;
@@ -72,7 +80,7 @@ li {
   background-color: #fafafa;
   padding: 2em;
   border: 0;
-  border-radius: 10px;
+  border-radius: 25px;
   box-shadow: 0 4px 8px 0 #00000033, 0 6px 20px 0 #00000030;
   box-sizing: border-box;
 }
@@ -84,8 +92,8 @@ label {
 
 input[type="text"] {
   padding: 10px;
-  border: 0;
-  border-radius: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
   background-color: #e6e6e6;
   font-size: 14px;
   width: 100%;
@@ -100,12 +108,11 @@ input:hover {
 select {
   padding: 10px;
   background-color: #e6e6e6;
-  border: 0;
-  border-radius: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
   font-size: 14px;
   text-align: center;
   width: 100%;
-  appearance: none;
 }
 select:hover {
   background-color: #d6d6d6;
@@ -115,14 +122,36 @@ select:hover {
   text-transform: capitalize;
 }
 
-/*button settings*/
+/******************* 
+* date input styles 
+********************/
+input[type="date"] {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  background-color: #e6e6e6;
+  font-size: 14px;
+  font-family: Arial, Helvetica, sans-serif;
+  width: 100%;
+  margin-bottom: 1em;
+  box-sizing: border-box;
+}
+
+input[type="date"]:hover {
+  background-color: #d6d6d6;
+  cursor: text;
+}
+
+/*******************
+* form button styles
+********************/
 .generateBtn {
   padding: 10px 22px;
   font-size: 16px;
   background-color: #478d53;
   color: #fafafa;
   border: none;
-  border-radius: 10px;
+  border-radius: 5px;
   width: 100%;
   margin-bottom: 1em;
 }
@@ -132,7 +161,75 @@ select:hover {
   cursor: pointer;
 }
 
-/*download form settings*/
+.barcodeInput {
+  display: flex;
+  align-items: center;
+  margin-top: 1em;
+}
+.barcodeInput input {
+  flex-grow: 1;
+  padding: 8px;
+  border: 1px solid #ccc; /* Add a border for visual separation */
+  border-radius: 5px 0 0 5px; /* Adjust border radius to match button */
+}
+.barcodeInput img {
+  width: 20px;
+  height: auto;
+}
+.barcodeInput button {
+  background-color: #222;
+  color: white;
+  border: none;
+  border-radius: 0 5px 5px 0;
+  margin: -1em 0 0 0; /* Adjust margin to align button with input */
+  cursor: pointer;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+}
+
+/*********************
+* convert form styles
+**********************/
+#convertForm {
+  display: flexbox;
+  align-items: center;
+  flex-direction: column;
+}
+
+@media (min-width: 768px) {
+  #convertForm {
+    margin: 0;
+    justify-content: space-around;
+    flex-direction: row; /*revert to row for larger screens */
+  }
+}
+
+.convertBtn {
+  padding: 10px 22px;
+  font-size: 16px;
+  background-color: #3c4ba3;
+  color: #fafafa;
+  border: 0;
+  border-radius: 5px;
+  width: 100%;
+  margin-top: 1em;
+}
+
+.convertBtn:hover {
+  background-color: #2d3c94;
+  color: #fafafa;
+  cursor: pointer;
+}
+
+#reportData {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/***********************
+* download form styles
+************************/
 #downloadForm {
   display: flex;
   align-items: center;
@@ -147,7 +244,7 @@ select:hover {
   background-color: #707070;
   color: #fafafa;
   border: 0;
-  border-radius: 25px;
+  border-radius: 5px;
   width: 100%;
   margin: 10px;
 }
@@ -157,14 +254,15 @@ select:hover {
   cursor: pointer;
 }
 
-/*tab nav settings*/
+/*****************
+*tab nav styles
+******************/
 .rightContainer {
   display: flex;
   flex-direction: column;
   margin-left: 2em;
   flex-grow: 1;
-  border-radius: 10px;
-
+  border-radius: 5px;
   box-shadow: 0 4px 8px 0 #00000033, 0 6px 20px 0 #00000030;
 }
 
@@ -190,12 +288,17 @@ select:hover {
     margin: auto;
     justify-content: center;
     flex-direction: column;
+    padding-top: 1em;
+  }
+  .tablinks.active {
+    width: 100%;
+    margin: auto;
   }
 }
 
 .tabs {
   display: flex;
-  border-radius: 4px 4px 0 0;
+  border-radius: 5px;
   width: 100%;
   background-color: #fafafa;
   flex-wrap: wrap; /*allow tabs to wrap on smaller screens */
@@ -204,77 +307,44 @@ select:hover {
 .tablinks {
   color: #111;
   padding: 1em;
+  margin: 0.5em;
   border: none;
   cursor: pointer;
   text-align: center;
-  border-radius: 4px 4px 0 0;
-  width: auto; 
-  min-width: 100px; 
-  font-size: 16px; 
+  border-radius: 25px;
+  width: auto;
+  min-width: 100px;
+  font-size: 16px;
   flex: none; /* ensure tabs don't stretch */
 }
 
 .tablinks:hover {
-  background-color: #d6d6d6;
+  background-color: #dfdfdf;
 }
 .tablinks.active {
-  background-color: #222;
   font-weight: 700;
-  color: #fafafa;
+  background-color: #e6e6e6;
+  width: 25%;
+  color: #111;
 }
 .tabcontent {
   display: none;
   padding: 2em;
   background-color: #222;
   color: #fafafa;
-  border-radius: 0 0 4px 4px;
+  border-radius: 5px;
   font-size: 14px;
   flex-grow: 1;
 }
 
-/*convert form*/
-#convertForm {
-  display: flexbox;
-  align-items: center;
-  flex-direction: column;
-}
-
-@media (min-width: 768px) {
-  #convertForm {
-    margin: 0;
-    justify-content: space-around;
-    flex-direction: row; /*revert to row for larger screens */
-  }
-}
-
-.convertBtn {
-  padding: 10px 22px;
-  font-size: 16px;
-  background-color: #222;
-  color: #fafafa;
-  border: 0;
-  border-radius: 10px;
-  width: 100%;
-  margin-top: 1em;
-}
-
-.convertBtn:hover {
-  background-color: #333;
-  color: #fafafa;
-  cursor: pointer;
-}
-
-#reportData {
-  white-space: pre-wrap;
-  word-wrap: break-word;
-}
-
-/* suggestions settings */
+/******************** 
+* suggestions styles 
+*********************/
 .results {
   display: hidden;
   background-color: #fafafa;
   border: none;
-  border-radius: 10px;
+  border-radius: 5px;
   max-height: 200px;
   overflow-y: auto;
   width: auto;
@@ -285,38 +355,24 @@ select:hover {
   margin: 0;
 }
 .results p:hover {
-  background-color: #e6e6e6;
+  background-color: #f0f0f0;
 }
 
-/* date input settings */
-input[type="date"] {
-  padding: 10px;
-  border: 0;
-  border-radius: 10px;
-  background-color: #e6e6e6;
-  font-size: 14px;
-  font-family: Arial, Helvetica, sans-serif;
-  width: 100%;
-  margin-bottom: 1em;
-  box-sizing: border-box;
-}
-
-input[type="date"]:hover {
-  background-color: #d6d6d6;
-  cursor: text;
-}
-
-/*error settings*/
+/**************
+* error styles
+***************/
 .error {
   background-color: #db3333;
   color: #fafafa;
   margin: 1em;
   padding: 1em;
   border: 0;
-  border-radius: 4px;
+  border-radius: 5px;
 }
 
-/*CSV table*/
+/******************
+* CSV table styles
+*******************/
 #csvData {
   overflow-x: auto; /*allow horizontal scrolling */
 }
@@ -324,7 +380,7 @@ input[type="date"]:hover {
 #csvData table {
   max-width: 100%;
   border-collapse: collapse;
-  border-radius: 0 0 4px 4px;
+  border-radius: 0 0 5px 5px;
 }
 
 #csvData th,
@@ -346,18 +402,23 @@ td {
   color: #fafafa;
 }
 
-/*PDF preview*/
+/*******************
+* PDF preview styles
+********************/
 embed {
-  border: 0;
-  border-radius: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
 }
 
+/****************
+* Scanner styles
+*****************/
 #scannerOutput {
   display: none; /* Initially hide the scanner output */
 }
 
 #reader {
-  max-width: 600px;
+  max-width: 500px;
   margin: auto;
   text-align: center;
   display: flex;
@@ -382,7 +443,7 @@ embed {
   margin: 5px;
   font-size: 16px;
   border: none;
-  border-radius: 25px;
+  border-radius: 5px;
   cursor: pointer;
   color: #fafafa;
 }
@@ -424,22 +485,6 @@ embed {
   font-size: 24px;
   color: #57a864;
 }
-.scanBtn {
-  padding: 10px 22px;
-  font-size: 16px;
-  background-color: #666;
-  color: #fafafa;
-  border: none;
-  border-radius: 10px;
-  width: 100%;
-  margin-top: 1em;
-}
-
-.scanBtn:hover {
-  background-color: #777;
-  cursor: pointer;
-}
-
 #scanHeader {
   font-size: 24px;
   text-align: center;
