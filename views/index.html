@@ -48,7 +48,16 @@
               Convert
             </button>
           </form>
-          <button id="scanBtn" class="scanBtn" type="button">Scan Code</button>
+          <div class="barcodeInput">
+            <input type="text" placeholder="Scan Barcode / Enter Code ID" />
+            <button id="scanBtn" class="scanBtn" type="button">
+              <img
+                class="barcodeImg"
+                src="/img/barcode.png"
+                alt="Barcode Icon"
+              />
+            </button>
+          </div>
         </section>
 
         <section class="rightContainer">
@@ -91,7 +100,9 @@
             <div id="reader"></div>
             <div id="result"></div>
             <div id="scannerBtns">
-              <button id="startBtn" class="start">Start Scanning</button>
+              <button id="startBtn" class="start" style="display: none">
+                Start Scanning
+              </button>
               <button id="stopBtn" class="stop">Stop Scanning</button>
             </div>
           </div>
