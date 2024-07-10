@@ -39,8 +39,13 @@ const paramColumnMapping = {
   Durchfuehrender: "Durchfuehrender",
 };
 
+//startDate is default set to the first day of the previous month
+const now = new Date();
+const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+const startDate = lastMonth.toISOString().split("T")[0]; //format as "YYYY-MM-DD"
+
 //function to map database type (dbType) to mssql data types
-function sqlTypeFromDbType(dbType) {
+function sqlTypeFromDb(dbType) {
   if (!dbType) {
     throw new Error(`Database type (dbType) cannot be null or undefined`);
   }
@@ -102,6 +107,8 @@ function sqlTypeFromDbType(dbType) {
       return sql.SmallMoney;
     case "boolean":
       return sql.Bit; //use sql.Bit for boolean types
+    case "barcode":
+      return sql.VarChar(sql.MAX); // new case for barcode, mapped to varchar
     default:
       console.warn(`Unknown dbType: ${dbType}. Defaulting to sql.NVarChar.`);
       return sql.NVarChar; // default to sql.NVarChar for unknown types
@@ -298,7 +305,7 @@ async function runReport(params) {
               );
               dbType = sql.NVarChar; // default to sql.NVarChar if type not found
             } else {
-              dbType = sqlTypeFromDbType(dbType); //convert dbType from string to SQL type if necessary
+              dbType = sqlTypeFromDb(dbType); //convert dbType from string to SQL type if necessary
             }
 
             //set input parameter for the query execution
