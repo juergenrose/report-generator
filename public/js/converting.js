@@ -30,36 +30,6 @@ function generateCsvContent(data) {
   return `${headers.join(",")}\n${csvRows.join("\n")}`;
 }
 
-//function to convert CSV content to an HTML table
-function csvToHtmlTable(csv) {
-  //trim whitespace, split CSV into rows
-  const rows = csv.trim().split("\n");
-  //split first row into header cells
-  const headerRow = rows[0].split(",");
-  //slice remaining rows as data rows
-  const dataRows = rows.slice(1);
-
-  //construct HTML table structure using template literals
-  return `
-    <table>
-      <thead>
-        <tr>${headerRow.map((header) => `<th>${header}</th>`).join("")}</tr>
-      </thead>
-      <tbody>
-        ${dataRows
-          .map(
-            (row) =>
-              `<tr>${row
-                .split(",")
-                .map((cell) => `<td>${cell}</td>`)
-                .join("")}</tr>`
-          )
-          .join("")}
-      </tbody>
-    </table>
-  `;
-}
-
 //function to convert JSON data to CSV and display it
 async function convertJsonToCsv(event) {
   event.preventDefault();
@@ -92,7 +62,11 @@ async function convertJsonToCsv(event) {
     //display the HTML table
     csvOutput.innerHTML = tableHTML;
     //switch to the CSV output tab
-    const event = { currentTarget: document.querySelector(".tablinks[onclick=\"openTab(event, 'csvOutput')\"]")};
+    const event = {
+      currentTarget: document.querySelector(
+        ".tablinks[onclick=\"openTab(event, 'csvOutput')\"]"
+      ),
+    };
     openTab(event, "csvOutput");
   } catch (error) {
     //log and display the error if any occurs during the conversion
@@ -190,7 +164,11 @@ async function convertToPDF(event) {
     console.log("PDF URL:", pdfUrl);
 
     pdfOutput.innerHTML = `<embed src="${pdfUrl}" type="application/pdf" width="100%" height="800px" />`;
-    const event = { currentTarget: document.querySelector(".tablinks[onclick=\"openTab(event, 'pdfOutput')\"]")};
+    const event = {
+      currentTarget: document.querySelector(
+        ".tablinks[onclick=\"openTab(event, 'pdfOutput')\"]"
+      ),
+    };
     openTab(event, "pdfOutput");
   } catch (error) {
     console.error("Error generating PDF:", error);
