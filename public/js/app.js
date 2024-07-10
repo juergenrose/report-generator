@@ -22,6 +22,15 @@ async function fetchReports() {
   }
 }
 
+//helper function to convert camelCase to Title Case
+function splitCamelCase(input) {
+  const spacedString = input.replace(/([A-Z])/g, " $1");
+  const titleCaseString = spacedString.replace(/\w\S*/g, function (txt) {
+    return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+  });
+  return titleCaseString.trim();
+}
+
 //function to fetch parameters for the selected report
 async function fetchParams() {
   //get the selected report name from the dropdown
@@ -43,6 +52,11 @@ async function fetchParams() {
       return;
     }
 
+    const today = new Date().toISOString().split("T")[0];
+    const now = new Date();
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const startDate = lastMonth.toISOString().split("T")[0];
+
     const paramInputs = Object.keys(parameters)
       .map((param) => {
         const { type } = parameters[param];
@@ -52,13 +66,18 @@ async function fetchParams() {
           type.toLowerCase() === "datetime"
             ? "date"
             : "text";
+        const defaultValue =
+          inputType === "date"
+            ? `value="${param === "endDate" ? today : startDate}"`
+            : "";
+        const label = splitCamelCase(param);
         return `
-        <div class="paramInput">
-          <label for="${param}">${param} (${type})</label><br>
-          <input type="${inputType}" id="${param}" name="${param}" oninput="fetchSuggestions('${reportname}', '${param}', this.value)">
-          <div id="${param}-results" class="results"></div>
-        </div>
-      `;
+          <div class="paramInput">
+            <label for="${param}">${label} (${type})</label><br>
+            <input type="${inputType}" id="${param}" name="${param}" oninput="fetchSuggestions('${reportname}', '${param}', this.value)" ${defaultValue}>
+            <div id="${param}-results" class="results"></div>
+          </div>
+        `;
       })
       .join("");
     //populate the parameter list with generated input fields
