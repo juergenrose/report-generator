@@ -31,48 +31,27 @@ function generateCsvContent(data) {
 }
 
 //function to convert JSON data to CSV and display it
-async function convertJsonToCsv(event) {
-  event.preventDefault();
-  const jsonOutput = document.getElementById("jsonOutput");
-  const csvOutput = document.getElementById("csvData");
-
-  try {
-    //find the JSON data element within the JSON output section
-    const jsonDataElement = jsonOutput.querySelector("pre");
-    if (!jsonDataElement) {
-      throw new Error("No JSON data found");
-    }
-    //parse the JSON data
-    const jsonData = JSON.parse(jsonDataElement.innerText);
-    //validate the JSON data structure
-    if (
-      !jsonData.data ||
-      !Array.isArray(jsonData.data) ||
-      jsonData.data.length === 0 ||
-      !isObject(jsonData.data[0])
-    ) {
-      throw new Error(
-        "Invalid JSON data: Expected 'data' property to be an array of objects."
-      );
-    }
-    //generate CSV content from the JSON data
-    const csvContent = generateCsvContent(jsonData.data);
-    //convert CSV content to an HTML table
-    const tableHTML = csvToHtmlTable(csvContent);
-    //display the HTML table
-    csvOutput.innerHTML = tableHTML;
-    //switch to the CSV output tab
-    const event = {
-      currentTarget: document.querySelector(
-        ".tablinks[onclick=\"openTab(event, 'csvOutput')\"]"
-      ),
-    };
-    openTab(event, "csvOutput");
-  } catch (error) {
-    //log and display the error if any occurs during the conversion
-    console.error("Error converting JSON to CSV:", error);
-    csvOutput.innerHTML = `<p class="error">Error converting JSON to CSV. Please try again.</p>`;
+function convertJsonToCsv(jsonData) {
+  if (!jsonData.data || !Array.isArray(jsonData.data)) {
+    console.error("Invalid data: No data array found.");
+    return;
   }
+
+  // Assume jsonData.data is an array of objects
+  const csvContent = generateCsvContent(jsonData.data);
+  downloadBlob(csvContent, "text/csv", "report.csv");
+}
+
+function downloadBlob(content, type, filename) {
+  const blob = new Blob([content], { type: type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 //convert CSV content to HTML table
@@ -95,21 +74,6 @@ function csvToHtmlTable(csvContent) {
     table.appendChild(row);
   });
   return table.outerHTML;
-}
-
-//helper function to parse a CSV row correctly
-function parseCsvRow(rowContent) {
-  //regular expression to match CSV fields, accounting for quoted fields with commas
-  const regex = /(?:,|^)"((?:""|[^"])+)"(?:,|$)|([^,]+)/g;
-  const cells = [];
-  let match;
-  //loop through all matches of the regex in the row content
-  while ((match = regex.exec(rowContent)) !== null) {
-    //if the match is a quoted field, use the first capturing group; otherwise, use the second capturing group
-    const cell = match[1] || match[2];
-    cells.push(cell.replace(/""/g, '"')); //replace double quotes within quoted fields
-  }
-  return cells;
 }
 
 //async function to handle PDF generation
