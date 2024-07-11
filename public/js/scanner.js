@@ -6,26 +6,28 @@ const scanner = new Html5Qrcode("reader");
 
 startBtn.addEventListener("click", startScanning);
 
+//start function
 function startScanning() {
   scanner
     .start(
       { facingMode: "environment" }, // or { facingMode: "user" } for front camera
       {
-        fps: 20,
+        fps: 30,
         qrbox: { width: 350, height: 350 },
       },
       (codeMessage) => {
-        // Handle QR Code result
+        //handle code result
         document.getElementById("result").innerHTML = `
         <h2>Success!</h2>
         <p>Code information:</p>
-        <p><a href="${codeMEssage}">${codeMessage}</a></p>
+        <p><a href="${codeMessage}">${codeMessage}</a></p>
         <button id="scanAnotherBtn">Scan another barcode</button>
         `;
         scanner.stop();
         document.getElementById("reader").style.display = "none";
         scanHeader.style.display = "none";
         stopBtn.style.display = "none";
+        startBtn.style.display = "block";
 
         document
           .getElementById("scanAnotherBtn")
@@ -35,9 +37,6 @@ function startScanning() {
             result.innerHTML = "";
             startScanning();
           });
-      },
-      (errorMessage) => {
-        console.log(`QR Code no longer in front of camera.`);
       }
     )
     .then(() => {
@@ -49,6 +48,7 @@ function startScanning() {
     });
 }
 
+//stop function
 stopBtn.addEventListener("click", () => {
   scanner
     .stop()
@@ -64,18 +64,16 @@ stopBtn.addEventListener("click", () => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Automatically click the first tab when the page loads
+  //automatically click the first tab when the page loads
   const firstTab = document.querySelector(
     ".tablinks[onclick=\"openTab(event, 'jsonOutput')\"]"
   );
   if (firstTab) {
     firstTab.click();
-    startBtn.style.display = "block";
-    stopBtn.style.display = "none";
   }
   fetchReports();
 
-  // Add click event listener to the Scan Code button
+  //add click event listener to the Scan Code button
   const scanBtn = document.getElementById("scanBtn");
   scanBtn.addEventListener("click", () => {
     const scannerTab = document.querySelector(
@@ -83,8 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     if (scannerTab) {
       scannerTab.click();
-      startBtn.style.display = "block";
-      stopBtn.style.display = "none";
+      startScanning();
     }
   });
 });
