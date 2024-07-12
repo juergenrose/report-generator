@@ -323,7 +323,7 @@ input[type="date"]:hover {
 .tabcontent {
   display: none;
   padding: 2em;
-  background-color: #222;
+  background-color: #333;
   color: #fafafa;
   border-radius: 12px;
   font-size: 14px;
@@ -367,36 +367,55 @@ input[type="date"]:hover {
 /******************
 * CSV table styles
 *******************/
+
+table {
+  border-radius: 8px;
+  margin: auto;
+  border-spacing: 0;
+  border-collapse: separate;
+  box-shadow: 0 4px 8px 0 #00000033, 0 6px 20px 0 #00000030;
+
+}
+td{
+  font-size: 14px;
+  background-color: #fafafa;
+  color: #111;
+}
+td,
+th {
+  padding: 8px 16px;
+  border: 1px solid #222;
+}
+th {
+  background-color: #555;
+  color: #fafafa;
+  font-size: 16px;
+}
+tr:last-child td:first-child {
+  border-bottom-left-radius: 8px;
+}
+tr:last-child td:last-child {
+  border-bottom-right-radius: 8px;
+}
+tr th:first-child,
+tr td:first-child {
+  border-left: 1px solid #222;
+}
+tr:first-child th,
+tr:first-child td {
+  border-top: 1px solid #222;
+}
+tr:first-child th:first-child,
+tr:first-child td:first-child {
+  border-top-left-radius: 8px;
+}
+tr:first-child th:last-child,
+tr:first-child td:last-child {
+  border-top-right-radius: 8px;
+}
+
 #csvData {
   overflow-x: auto; /*allow horizontal scrolling */
-}
-
-#csvData table {
-  max-width: 100%;
-  border-collapse: collapse;
-  margin: auto;
-}
-
-#csvData th,
-td {
-  border: 1px solid #ccc;
-  padding: 10px;
-  text-align: left;
-}
-
-#csvData td {
-  padding: 10px;
-  font-size: 14px;
-  color: #111;
-  background-color: #fafafa;
-}
-
-#csvData th {
-  text-align: center;
-  padding: 12px;
-  font-size: 16px;
-  background-color: #666;
-  color: #fafafa;
 }
 
 /*******************
@@ -405,6 +424,8 @@ td {
 embed {
   border-radius: 4px;
   width: 100%;
+  box-shadow: 0 4px 8px 0 #00000033, 0 6px 20px 0 #00000030;
+
 }
 
 /****************
