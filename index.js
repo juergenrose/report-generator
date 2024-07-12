@@ -43,7 +43,7 @@ app.get("/report", async (req, res) => {
   }
 });
 
-// Route to handle report previews
+// Route to handle report previews and downloads
 app.get("/report/:reportname", async (req, res) => {
   try {
     const { reportname } = req.params;
@@ -76,10 +76,18 @@ app.get("/report/:reportname", async (req, res) => {
       }
       const reportData = await runReport(parsedQueryParams);
 
+      const isDownload = req.query.download === "true";
+
       if (format) {
         switch (format) {
           case "json":
-            res.json(reportData);
+            await handleJsonReport(
+              reportname,
+              reportData,
+              res,
+              queryParams,
+              isDownload
+            );
             break;
           case "csv":
             const csvData = await handleCsvReport(reportname, reportData);
@@ -89,7 +97,8 @@ app.get("/report/:reportname", async (req, res) => {
             const pdfContent = await generatePdfContent(
               reportname,
               reportData,
-              queryParams
+              queryParams,
+              isDownload
             );
             res.status(200).contentType("application/pdf").send(pdfContent);
             break;
@@ -103,63 +112,6 @@ app.get("/report/:reportname", async (req, res) => {
   } catch (err) {
     console.error(`Error handling report ${reportname}:`, err);
     res.status(500).send(`Error handling report ${reportname}: ${err.message}`);
-  }
-});
-
-// Route to handle report downloads
-app.get("/download/:reportname", async (req, res) => {
-  try {
-    const { reportname } = req.params;
-    const queryParams = req.query;
-    const { format } = queryParams;
-
-    const filePath = path.join(__dirname, "routes", `${reportname}.js`);
-    await fsPromise.access(filePath); // Check if file exists
-
-    const { runReport } = require(filePath);
-    const { value: parsedQueryParams } = parseQuery(queryParams);
-    const reportData = await runReport(parsedQueryParams);
-
-    if (format) {
-      switch (format) {
-        case "json":
-          res.setHeader(
-            "Content-Disposition",
-            `attachment; filename=${reportname}.json`
-          );
-          res.json(reportData);
-          break;
-        case "csv":
-          const csvData = await handleCsvReport(reportname, reportData);
-          res.setHeader(
-            "Content-Disposition",
-            `attachment; filename=${reportname}.csv`
-          );
-          res.contentType("text/csv").send(csvData);
-          break;
-        case "pdf":
-          const pdfContent = await generatePdfContent(
-            reportname,
-            reportData,
-            queryParams
-          );
-          res.setHeader(
-            "Content-Disposition",
-            `attachment; filename=${reportname}.pdf`
-          );
-          res.contentType("application/pdf").send(pdfContent);
-          break;
-        default:
-          res.status(400).send("Invalid format specified.");
-      }
-    } else {
-      res.status(400).send("Format not specified.");
-    }
-  } catch (err) {
-    console.error(`Error handling download for ${reportname}:`, err);
-    res
-      .status(500)
-      .send(`Error handling download for ${reportname}: ${err.message}`);
   }
 });
 
