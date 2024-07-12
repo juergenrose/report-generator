@@ -96,6 +96,9 @@ async function showJsonOutput(event) {
   const reportname = document.getElementById("reportList").value;
   const form = document.getElementById("reportForm");
   const jsonOutput = document.getElementById("jsonOutput");
+  const csvOutput = document.getElementById("csvOutput");
+  const pdfOutput = document.getElementById("pdfOutput");
+
   //check if a valid report is selected
   if (reportname === "-- Select a report --") {
     document.getElementById(
@@ -116,12 +119,33 @@ async function showJsonOutput(event) {
     const jsonData = await response.json();
     //convert the JSON data to a prettified string
     const prettifiedJson = JSON.stringify(jsonData, null, 2);
-    //display the prettified JSON data in the reportData element
+
     document.getElementById(
       "reportData"
     ).innerHTML = `<pre>${prettifiedJson}</pre>`;
-    //show the JSON output container
-    jsonOutput.style.display = "block";
+
+    //convert to CSV and display
+    const csvContent = generateCsvContent(jsonData.data);
+    const tableHTML = csvToHtmlTable(csvContent);
+    csvOutput.innerHTML = tableHTML;
+
+    //set up PDF preview but don't download it yet
+    const pdfUrl = `/report/${reportname}?${params}&format=pdf`;
+    const pdfResponse = await fetch(pdfUrl, { method: "GET" });
+    if (!pdfResponse.ok) {
+      throw new Error(`Failed to generate PDF: ${await pdfResponse.text()}`);
+    }
+    const pdfBlob = await pdfResponse.blob();
+    const pdfUrlObject = URL.createObjectURL(pdfBlob);
+    pdfOutput.innerHTML = `<embed src="${pdfUrlObject}" type="application/pdf" width="100%" height="800px" />`;
+
+    //set PDF as the default active tab
+    const event = {
+      currentTarget: document.querySelector(
+        ".tablinks[onclick=\"openTab(event, 'pdfOutput')\"]"
+      ),
+    };
+    openTab(event, "pdfOutput");
   } catch (error) {
     console.error("Error generating report:", error);
     document.getElementById(
@@ -135,41 +159,57 @@ async function downloadReport(event) {
   event.preventDefault();
   const reportname = document.getElementById("reportList").value;
   const format = document.getElementById("format").value;
-  const form = document.getElementById("reportForm");
+
   //Validate selected report name and format
-  if (reportname === "-- Select a report --") {
+  if (reportname === "-- Select a report --" || format === "") {
     document.getElementById(
       "paramList"
     ).innerHTML = `<p class="error">Please select a valid report and format before downloading.</p>`;
     return;
   }
+
+  const form = document.getElementById("reportForm");
+  const params = new URLSearchParams(new FormData(form)).toString();
+  //construct the URL with query parameters
+  const url = `/report/${reportname}?${params}&format=${format}`;
+
   try {
-    //convert form data to URL parameters
-    const params = new URLSearchParams(new FormData(form)).toString();
-    const response = await fetch(
-      //fetch the report data in the specified format
-      `/report/${reportname}?${params}&format=${format}`
-    );
+    const response = await fetch(url);
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
-    //convert the response to a blob representing the downloaded file
-    const blob = await response.blob();
-    //create a URL for the blob
-    const downloadUrl = URL.createObjectURL(blob);
-    //create an <a> element to trigger the download
-    const a = document.createElement("a");
-    a.href = downloadUrl;
-    a.download = `${reportname}.${format}`;
-    //append the <a> element to the document body and trigger the click event
-    document.body.appendChild(a);
-    a.click();
-    //remove the <a> element from the document body
-    document.body.removeChild(a);
+    //process the response based on the selected format
+    if (format === "json") {
+      const jsonData = await response.json(); //get JSON data
+      const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], {
+        type: "application/json",
+      });
+      downloadBlob(jsonBlob, "application/json", `${reportname}.json`); //download JSON file
+    } else if (format === "csv") {
+      const csvData = await response.text(); //get CSV data as text
+      downloadBlob(csvData, "text/csv", `${reportname}.csv`); //download CSV file
+    } else if (format === "pdf") {
+      const pdfBlob = await response.blob(); //get PDF data as blob
+      downloadBlob(pdfBlob, "application/pdf", `${reportname}.pdf`); //download PDF file
+    } else {
+      throw new Error("Invalid format specified."); 
+    }
   } catch (error) {
     console.error("Error downloading report:", error);
-    alert("Failed to download report. Please try again.");
   }
+}
+
+//function to download a blob as a file
+function downloadBlob(blobContent, mimeType, filename) {
+  const blob = new Blob([blobContent], { type: mimeType }); //create a blob with the specified content and MIME type
+  const url = URL.createObjectURL(blob); //create a URL for the blob
+  const a = document.createElement("a"); // create an anchor element
+  a.href = url; //set the URL as the href of the anchor
+  a.download = filename; //set the filename for the download
+  document.body.appendChild(a); //append the anchor to the document
+  a.click(); //click the anchor to trigger the download
+  a.remove(); //remove the anchor from the document
+  URL.revokeObjectURL(url); //revoke the object URL to free up resources
 }
 
 //function to handle tab navigation
