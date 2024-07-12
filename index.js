@@ -1,4 +1,3 @@
-//required modules
 const express = require("express");
 const app = express();
 const port = 3000;
@@ -6,12 +5,12 @@ const cors = require("cors");
 const fsPromise = require("fs").promises;
 const path = require("path");
 const { setupSwagger } = require("./generate-api");
-const { handleXmlReport, handleCsvReport } = require("./convert-report");
+const { handleJsonReport, handleCsvReport, generatePdfContent } = require("./convert-report");
 
-//middleware for static files and view engine
+// Middleware for static files and view engine
 app.use(cors());
 app.use(express.static("public"));
-app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
+app.use("/node_modules", express.static(path.join(__dirname, "node_modules")));
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "html");
 
@@ -19,13 +18,10 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "views", "index.html"));
 });
 
-//helper function to parse and format
+// Helper function to parse and format query parameters
 const parseQuery = (queryParams) => {
-  //extract the format params from the query params , if it exists, or set to null if it does not
   const format = queryParams.format || null;
-  //create a copy of the query params to avoid mutaating the original object
   const value = { ...queryParams };
-  //remove the format parameter from the copy of query params
   delete value.format;
   return { value, format };
 };
@@ -34,9 +30,7 @@ app.get("/report", async (req, res) => {
   try {
     const reportsDirectory = path.join(__dirname, "routes");
     const files = await fsPromise.readdir(reportsDirectory);
-    //filter the files to include only js files
     const reportFiles = files.filter((file) => file.endsWith(".js"));
-    //remove the .js extension to get the report names
     const reportNames = reportFiles.map((file) => path.basename(file, ".js"));
     res.json({ reports: reportNames });
   } catch (err) {
@@ -45,31 +39,26 @@ app.get("/report", async (req, res) => {
   }
 });
 
-//route to handle reports
+// Route to handle report previews
 app.get("/report/:reportname", async (req, res) => {
   try {
     const { reportname } = req.params;
     const queryParams = req.query;
 
     const filePath = path.join(__dirname, "routes", `${reportname}.js`);
-    await fsPromise.access(filePath); //check if file exists
+    await fsPromise.access(filePath); // Check if file exists
 
     const { runReport, getQueryParams } = require(filePath);
 
     if (Object.keys(queryParams).length === 0) {
       if (typeof getQueryParams !== "function") {
-        throw new Error(
-          `getQueryParams function not found in ${reportname}.js`
-        );
+        throw new Error(`getQueryParams function not found in ${reportname}.js`);
       }
-      const parameters = await getQueryParams(); // ensure to await getQueryParams()
+      const parameters = await getQueryParams();
 
       if (!parameters) {
-        return res
-          .status(404)
-          .json({ error: "No parameters found for this report." });
+        return res.status(404).json({ error: "No parameters found for this report." });
       }
-      // return report name and parameters object
       return res.json({ reportname, parameters });
     } else {
       const { value: parsedQueryParams, format } = parseQuery(queryParams);
@@ -81,11 +70,16 @@ app.get("/report/:reportname", async (req, res) => {
 
       if (format) {
         switch (format) {
+          case "json":
+            res.json(reportData);
+            break;
           case "csv":
-            await handleCsvReport(reportname, reportData, res);
+            const csvData = await handleCsvReport(reportname, reportData);
+            res.status(200).send(csvData);
             break;
           case "pdf":
-            await handleXmlReport(reportname, reportData, res, queryParams);
+            const pdfContent = await generatePdfContent(reportname, reportData, queryParams);
+            res.status(200).contentType("application/pdf").send(pdfContent);
             break;
           default:
             res.status(400).send("Invalid format specified.");
@@ -100,7 +94,49 @@ app.get("/report/:reportname", async (req, res) => {
   }
 });
 
-//route to handle suggestions for a report
+// Route to handle report downloads
+app.get("/download/:reportname", async (req, res) => {
+  try {
+    const { reportname } = req.params;
+    const queryParams = req.query;
+    const { format } = queryParams;
+
+    const filePath = path.join(__dirname, "routes", `${reportname}.js`);
+    await fsPromise.access(filePath); // Check if file exists
+
+    const { runReport } = require(filePath);
+    const { value: parsedQueryParams } = parseQuery(queryParams);
+    const reportData = await runReport(parsedQueryParams);
+
+    if (format) {
+      switch (format) {
+        case "json":
+          res.setHeader('Content-Disposition', `attachment; filename=${reportname}.json`);
+          res.json(reportData);
+          break;
+        case "csv":
+          const csvData = await handleCsvReport(reportname, reportData);
+          res.setHeader('Content-Disposition', `attachment; filename=${reportname}.csv`);
+          res.contentType("text/csv").send(csvData);
+          break;
+        case "pdf":
+          const pdfContent = await generatePdfContent(reportname, reportData, queryParams);
+          res.setHeader('Content-Disposition', `attachment; filename=${reportname}.pdf`);
+          res.contentType("application/pdf").send(pdfContent);
+          break;
+        default:
+          res.status(400).send("Invalid format specified.");
+      }
+    } else {
+      res.status(400).send("Format not specified.");
+    }
+  } catch (err) {
+    console.error(`Error handling download for ${reportname}:`, err);
+    res.status(500).send(`Error handling download for ${reportname}: ${err.message}`);
+  }
+});
+
+// Route to handle suggestions for a report
 app.get("/report/:reportname/suggestions", async (req, res) => {
   try {
     const { reportname } = req.params;
@@ -123,7 +159,7 @@ app.get("/report/:reportname/suggestions", async (req, res) => {
   }
 });
 
-//setup Swagger and start the server
+// Setup Swagger and start the server
 (async () => {
   await setupSwagger(app);
 

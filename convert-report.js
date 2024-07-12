@@ -1,118 +1,197 @@
-const { exec } = require("child_process");
-const jsonCsv = require("json2csv");
-const { create } = require("xmlbuilder2");
+const json2csv = require("json2csv");
 const fs = require("fs");
-const fsPromise = require("fs").promises;
 const path = require("path");
+const puppeteer = require("puppeteer");
+const xml2js = require("xml2js");
 
-// handler for CSV reports
-async function handleCsvReport(reportname, reportData, res) {
-  const csvDir = path.join(__dirname, "csv");
+async function handleCsvReport(reportname, reportData) {
   try {
-    //create the CSV directory if it doesn't exist
-    if (!fs.existsSync(csvDir)) {
-      fs.mkdirSync(csvDir);
-    }
-    const csvData = jsonCsv.parse(reportData); //convert JSON data to CSV
-    const csvFilePath = path.join(csvDir, `${reportname}.csv`);
-    await fsPromise.writeFile(csvFilePath, csvData); //write CSV data to file
+    const data = reportData.data || reportData;
+    const flattenedData = data.map((item) => flattenObject(item));
+    const csvData = json2csv.parse(flattenedData);
 
-    //set HTTP headers for download
-    res.setHeader(
-      "Content-disposition",
-      `attachment; filename=${reportname}.csv`
-    );
-    res.set("Content-Type", "text/csv");
-    res.status(200).send(csvData);
+    const csvDir = path.join(__dirname, "csv");
+    const csvFile = path.join(csvDir, `${reportname}.csv`);
+
+    if (!fs.existsSync(csvDir)) fs.mkdirSync(csvDir);
+    fs.writeFileSync(csvFile, csvData);
+
+    return csvData;
   } catch (err) {
     console.error(`Error generating CSV report for ${reportname}`, err);
-    res
-      .status(500)
-      .send(`Error generating CSV report for ${reportname}: ${err.message}`);
+    throw new Error(
+      `Error generating CSV report for ${reportname}: ${err.message}`
+    );
   }
 }
 
-// handler for XML/PDF reports
-async function handleXmlReport(reportname, reportData, res, queryParams) {
+async function handleJsonReport(reportname, reportData, res, queryParams) {
   try {
-    //validate reportData format
-    if (!Array.isArray(reportData.data)) {
-      throw new Error("Report data is not an array");
-    }
-    //create the XML structure
-    const root = create({ version: "1.0" }).ele(reportname);
-    //iterate through each record in the reportData
-    reportData.data.forEach((record, index) => {
-      const recordElement = root.ele(`record_${index}`);
-      // Iterate through key-value pairs of each record
-      Object.entries(record).forEach(([key, value]) => {
-        //handle keys that start with a digit by prefixing with an underscore
-        const xmlKey = key.replace(/^\d/, "_$&");
-
-        //check if value is an object to handle nested structures
-        if (typeof value === "object" && value !== null) {
-          Object.entries(value).forEach(([subKey, subValue]) => {
-            //handle nested keys that start with a digit similarly
-            const subXmlKey = subKey.replace(/^\d/, "_$&");
-            recordElement.ele(subXmlKey).txt(subValue);
-          });
-        } else {
-          //add text content to XML element
-          recordElement.ele(xmlKey).txt(value);
-        }
-      });
-    });
-
-    const xmlData = root.end({ prettyPrint: true });
-    const xmlDir = path.join(__dirname, "xml");
+    const jsonDir = path.join(__dirname, "json");
     const pdfDir = path.join(__dirname, "pdf");
-    const xmlFile = path.join(xmlDir, `${reportname}.xml`);
+    const jsonFile = path.join(jsonDir, `${reportname}.json`);
     const pdfFile = path.join(pdfDir, `${reportname}.pdf`);
-    const specificXsl = path.join(__dirname, "styles", `${reportname}.xsl`);
-    const defaultXsl = path.join(__dirname, "styles", "report-style.xsl");
-    const fopCmd = path.join(__dirname, "fop/fop", "fop.cmd");
 
-    //create directories if they don't exist
-    if (!fs.existsSync(xmlDir)) fs.mkdirSync(xmlDir);
+    if (!fs.existsSync(jsonDir)) fs.mkdirSync(jsonDir);
     if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir);
-    fs.writeFileSync(xmlFile, xmlData);
+    fs.writeFileSync(jsonFile, JSON.stringify(reportData, null, 2));
 
-    //determine which XSL file to use
-    const xslFile = fs.existsSync(specificXsl) ? specificXsl : defaultXsl;
+    const countryFlags = await loadCountryFlags();
+    const htmlContent = generateHtmlContent(
+      reportname,
+      reportData,
+      queryParams,
+      countryFlags
+    );
+    await generatePdfFromHtml(htmlContent, pdfFile);
 
-    //construct the permalink using the query parameters
-    const queryParamsString = new URLSearchParams(queryParams).toString();
-    const permalink = `/report/${reportname}?${queryParamsString}`;
-    //construct the command dynamically
-    let cmd = `${fopCmd} -xml "${xmlFile}" -xsl "${xslFile}" -pdf "${pdfFile}" -param "Permalink" "${permalink}"`;
-
-    //only add CountryCode if it's defined and not undefined or null
-    if (reportData.data[0].CountryCode !== undefined) {
-      cmd += ` -param "CountryCode" "${reportData.data[0].CountryCode}"`;
-    }
-
-    //execute Apache FOP command to generate PDF
-    exec(cmd, (error, stdout, stderr) => {
-      if (error) {
-        console.error(`Error executing Apache FOP: ${error}`);
-        res.status(500).send(`Error executing Apache FOP: ${error.message}`);
-        return;
-      }
-      //set headers to force download
-      res.setHeader(
-        "Content-disposition",
-        `attachment; filename=${reportname}.pdf`
-      );
-      res.setHeader("Content-Type", "application/pdf");
-      //send the PDF file
-      fs.createReadStream(pdfFile).pipe(res);
-    });
+    res.setHeader(
+      "Content-disposition",
+      `attachment; filename=${reportname}.pdf`
+    );
+    res.setHeader("Content-Type", "application/pdf");
+    fs.createReadStream(pdfFile).pipe(res);
   } catch (err) {
-    console.error(`Error handling XML report for ${reportname}:`, err);
+    console.error(`Error handling JSON report for ${reportname}:`, err);
     res
       .status(500)
-      .send(`Error handling XML report for ${reportname}: ${err.message}`);
+      .send(`Error handling JSON report for ${reportname}: ${err.message}`);
   }
 }
 
-module.exports = { handleXmlReport, handleCsvReport };
+async function generatePdfContent(reportname, reportData, queryParams) {
+  const countryFlags = await loadCountryFlags();
+  const htmlContent = generateHtmlContent(
+    reportname,
+    reportData,
+    queryParams,
+    countryFlags
+  );
+
+  const browser = await puppeteer.launch({
+    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    timeout: 60000, // Increase timeout to 60 seconds
+  });
+
+  const page = await browser.newPage();
+  await page.setContent(htmlContent, { waitUntil: "networkidle2" });
+  const pdfBuffer = await page.pdf({ format: "A4" });
+  await browser.close();
+
+  return pdfBuffer;
+}
+
+async function loadCountryFlags() {
+  const xmlFile = path.join(__dirname, "countryFlags.xml");
+  const xmlData = fs.readFileSync(xmlFile, "utf-8");
+  const parser = new xml2js.Parser();
+  const result = await parser.parseStringPromise(xmlData);
+  const flags = {};
+  for (const [code, url] of Object.entries(result.flags)) {
+    flags[code] = url[0];
+  }
+  return flags;
+}
+
+function generateHtmlContent(
+  reportname,
+  reportData,
+  queryParams,
+  countryFlags
+) {
+  const queryParamsString = new URLSearchParams(queryParams).toString();
+  const permalink = `/report/${reportname}?${queryParamsString}`;
+
+  let html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>${reportname} Report</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 50px; }
+        header { display: flex; justify-content: space-between; align-items: center; }
+        header img { height: 40px; }
+        header div { text-align: right; margin:0; }
+        header div p { margin: 0; }
+        h1 { font-size: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; border-bottom: 1px solid #ccc;}
+        th, td { border: 1px solid #dddddd; text-align: left; padding: 8px; }
+        th { background-color: #f2f2f2; }
+        .section { margin-bottom: 20px; }
+        .section h2 { margin-top: 10px; }
+        img.flag { width: 40px; height: 30px; margin: 10px 0; justify-self: center; }
+        p { font-size: 14px; margin: 10px 0; } /* Add margin to <p> elements for spacing */
+        .entry { margin-bottom: 30px; border-bottom: 1px solid #ccc; } /* Add margin to each entry for spacing */
+        .entry-header { display: flex; justify-content: space-between; align-items: center; }
+        .entry-header div { flex: 1; }
+        .entry-header div:last-child { text-align: right; }
+      </style>
+    </head>
+    <body>
+      <header>
+        <div>
+          <h1>Report: ${reportname}</h1>
+          <p>Created on: ${new Date().toLocaleString()}</p>
+        </div>
+        <img src="data:image/png;base64,${fs.readFileSync(
+          path.join(__dirname, "logo.png"),
+          { encoding: "base64" }
+        )}" alt="Logo" />
+      </header>
+      <hr>
+        <a href="${permalink}" style="display:block; margin: 20px 0 30px 0; text-align: center; font-size: 14px">${permalink}</a>
+        <br>`;
+
+  reportData.data.forEach((record) => {
+    const countryCode = record.CountryCode;
+    const flagUrl = countryFlags[countryCode] || "";
+
+    html += `<div class="entry">`;
+    if (countryCode) {
+      html += `
+        ${
+          flagUrl
+            ? `<img src="${flagUrl}" alt="Flag of ${countryCode}" class="flag"/>`
+            : ""
+        }
+        <p><strong>Country Code:</strong> ${countryCode}</p>`;
+    }
+
+    // Entry header with ID and Durchfuehrender
+    if (record.ID && record.Durchfuehrender) {
+      html += `<div class="entry-header">
+      <div><p><strong>ID:</strong> ${record.ID}</p></div>
+      <div><p><strong>Durchfuehrender:</strong> ${record.Durchfuehrender}</p></div>
+    </div>`;
+    }
+    // Remaining entries
+    Object.entries(record).forEach(([key, value]) => {
+      if (key !== "CountryCode" && key !== "ID" && key !== "Durchfuehrender") {
+        html += `<p><strong>${key}:</strong> ${value}</p>`;
+      }
+    });
+    html += `</div>`;
+  });
+
+  html += `
+      </div>
+    </body>
+    </html>`;
+
+  return html;
+}
+
+module.exports = { handleJsonReport, handleCsvReport, generatePdfContent };
+
+// Helper function to flatten nested objects
+function flattenObject(obj, parent = "", res = {}) {
+  for (let key in obj) {
+    const propName = parent ? `${parent}.${key}` : key;
+    if (typeof obj[key] === "object" && !Array.isArray(obj[key])) {
+      flattenObject(obj[key], propName, res);
+    } else {
+      res[propName] = obj[key];
+    }
+  }
+  return res;
+}
