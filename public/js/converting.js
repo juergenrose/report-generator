@@ -3,32 +3,50 @@ function isObject(obj) {
   return obj && typeof obj === "object" && !Array.isArray(obj);
 }
 
-//main function to handle conversion based on the selected format (CSV or PDF)
-async function convert(event) {
-  event.preventDefault();
-  const format = document.getElementById("format").value;
-  if (format === "csv") {
-    convertJsonToCsv(event);
-  } else if (format === "pdf") {
-    convertToPDF(event);
+//function to flatten a nested object
+function flattenObject(obj, parentPrefix = "") {
+  let result = {}; // initialize the result object
+
+  //iterate over all properties of the object
+  for (let key in obj) {
+    if (!obj.hasOwnProperty(key)) continue; // skip inherited properties
+
+    //construct the new property name
+    let propName = parentPrefix ? `${parentPrefix}.${key}` : key;
+
+    //if the property is an object, recursively flatten it
+    if (typeof obj[key] === "object" && obj[key] !== null) {
+      Object.assign(result, flattenObject(obj[key], propName));
+    } else {
+      // otherwise, add the property to the result
+      result[propName] = obj[key];
+    }
   }
+  return result;
 }
 
 //function to generate CSV content from JSON data
 function generateCsvContent(data) {
-  if (!Array.isArray(data) || data.length === 0) {
-    return "";
-  }
-  //extract headers from the first object in the data array
-  const headers = Object.keys(data[0]);
-  //map each row of data to CSV format
-  const csvRows = data.map((row) =>
-    //map each header to JSON stringified cell value or empty string, join with commas
-    headers.map((header) => JSON.stringify(row[header] || "")).join(",")
-  );
-  //join headers with comma, concatenate with CSV rows joined by newline character
-  return `${headers.join(",")}\n${csvRows.join("\n")}`;
+  if (!data || data.length === 0) return ""; // return an empty string if data is empty
+
+  //flatten each item in the data array
+  let flatJson = data.map((item) => flattenObject(item));
+
+  // get the headers (keys) from the first item in the flattened JSON
+  let headers = Object.keys(flatJson[0]);
+
+  // map each row in the flattened JSON to a CSV row
+  let csvArray = flatJson.map((row) => {
+    return headers
+      .map((header) => `"${String(row[header]).replace(/"/g, '""')}"`) // escape double quotes in values
+      .join(","); // join values with commas
+  });
+
+  csvArray.unshift(headers.join(",")); // add headers at the top of the CSV
+
+  return csvArray.join("\r\n"); // join all rows with newline characters
 }
+
 
 //function to convert JSON data to CSV and display it
 function convertJsonToCsv(jsonData) {
