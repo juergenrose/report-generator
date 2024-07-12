@@ -5,7 +5,11 @@ const cors = require("cors");
 const fsPromise = require("fs").promises;
 const path = require("path");
 const { setupSwagger } = require("./generate-api");
-const { handleJsonReport, handleCsvReport, generatePdfContent } = require("./convert-report");
+const {
+  handleJsonReport,
+  handleCsvReport,
+  generatePdfContent,
+} = require("./convert-report");
 
 // Middleware for static files and view engine
 app.use(cors());
@@ -52,12 +56,16 @@ app.get("/report/:reportname", async (req, res) => {
 
     if (Object.keys(queryParams).length === 0) {
       if (typeof getQueryParams !== "function") {
-        throw new Error(`getQueryParams function not found in ${reportname}.js`);
+        throw new Error(
+          `getQueryParams function not found in ${reportname}.js`
+        );
       }
       const parameters = await getQueryParams();
 
       if (!parameters) {
-        return res.status(404).json({ error: "No parameters found for this report." });
+        return res
+          .status(404)
+          .json({ error: "No parameters found for this report." });
       }
       return res.json({ reportname, parameters });
     } else {
@@ -78,7 +86,11 @@ app.get("/report/:reportname", async (req, res) => {
             res.status(200).send(csvData);
             break;
           case "pdf":
-            const pdfContent = await generatePdfContent(reportname, reportData, queryParams);
+            const pdfContent = await generatePdfContent(
+              reportname,
+              reportData,
+              queryParams
+            );
             res.status(200).contentType("application/pdf").send(pdfContent);
             break;
           default:
@@ -111,17 +123,30 @@ app.get("/download/:reportname", async (req, res) => {
     if (format) {
       switch (format) {
         case "json":
-          res.setHeader('Content-Disposition', `attachment; filename=${reportname}.json`);
+          res.setHeader(
+            "Content-Disposition",
+            `attachment; filename=${reportname}.json`
+          );
           res.json(reportData);
           break;
         case "csv":
           const csvData = await handleCsvReport(reportname, reportData);
-          res.setHeader('Content-Disposition', `attachment; filename=${reportname}.csv`);
+          res.setHeader(
+            "Content-Disposition",
+            `attachment; filename=${reportname}.csv`
+          );
           res.contentType("text/csv").send(csvData);
           break;
         case "pdf":
-          const pdfContent = await generatePdfContent(reportname, reportData, queryParams);
-          res.setHeader('Content-Disposition', `attachment; filename=${reportname}.pdf`);
+          const pdfContent = await generatePdfContent(
+            reportname,
+            reportData,
+            queryParams
+          );
+          res.setHeader(
+            "Content-Disposition",
+            `attachment; filename=${reportname}.pdf`
+          );
           res.contentType("application/pdf").send(pdfContent);
           break;
         default:
@@ -132,7 +157,9 @@ app.get("/download/:reportname", async (req, res) => {
     }
   } catch (err) {
     console.error(`Error handling download for ${reportname}:`, err);
-    res.status(500).send(`Error handling download for ${reportname}: ${err.message}`);
+    res
+      .status(500)
+      .send(`Error handling download for ${reportname}: ${err.message}`);
   }
 });
 
