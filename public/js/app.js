@@ -171,7 +171,7 @@ async function downloadReport(event) {
   const form = document.getElementById("reportForm");
   const params = new URLSearchParams(new FormData(form)).toString();
   //construct the URL with query parameters
-  const url = `/report/${reportname}?${params}&format=${format}`;
+  const url = `/report/${reportname}?${params}&format=${format}&download=true`;
 
   try {
     const response = await fetch(url);
