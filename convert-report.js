@@ -4,6 +4,36 @@ const path = require("path");
 const puppeteer = require("puppeteer");
 const xml2js = require("xml2js");
 
+// Helper function to flatten nested objects
+function flattenObject(obj, parent = "", res = {}) {
+  for (let key in obj) {
+    const propName = parent ? `${parent}.${key}` : key;
+    if (typeof obj[key] === "object" && !Array.isArray(obj[key])) {
+      flattenObject(obj[key], propName, res);
+    } else {
+      res[propName] = obj[key];
+    }
+  }
+  return res;
+}
+
+async function loadCountryFlags() {
+  try {
+    const xmlFile = path.join(__dirname, "countryFlags.xml");
+    const xmlData = fs.readFileSync(xmlFile, "utf-8");
+    const parser = new xml2js.Parser();
+    const result = await parser.parseStringPromise(xmlData);
+    const flags = {};
+    for (const [code, urls] of Object.entries(result.flags)) {
+      flags[code] = urls[0];
+    }
+    return flags;
+  } catch (err) {
+    console.error("Error loading country flags:", err);
+    throw new Error("Failed to load country flags.");
+  }
+}
+
 async function handleCsvReport(reportname, reportData) {
   try {
     const data = reportData.data || reportData;
@@ -25,32 +55,30 @@ async function handleCsvReport(reportname, reportData) {
   }
 }
 
-async function handleJsonReport(reportname, reportData, res, queryParams) {
+async function handleJsonReport(
+  reportname,
+  reportData,
+  res,
+  queryParams,
+  isDownload = false
+) {
   try {
     const jsonDir = path.join(__dirname, "json");
-    const pdfDir = path.join(__dirname, "pdf");
     const jsonFile = path.join(jsonDir, `${reportname}.json`);
-    const pdfFile = path.join(pdfDir, `${reportname}.pdf`);
 
     if (!fs.existsSync(jsonDir)) fs.mkdirSync(jsonDir);
-    if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir);
+    // Write the JSON file
     fs.writeFileSync(jsonFile, JSON.stringify(reportData, null, 2));
 
-    const countryFlags = await loadCountryFlags();
-    const htmlContent = generateHtmlContent(
-      reportname,
-      reportData,
-      queryParams,
-      countryFlags
-    );
-    await generatePdfFromHtml(htmlContent, pdfFile);
-
-    res.setHeader(
-      "Content-disposition",
-      `attachment; filename=${reportname}.pdf`
-    );
-    res.setHeader("Content-Type", "application/pdf");
-    fs.createReadStream(pdfFile).pipe(res);
+    if (isDownload) {
+      // Send the JSON file to the client for download
+      res.setHeader(
+        "Content-disposition",
+        `attachment; filename=${reportname}.json`
+      );
+      res.setHeader("Content-Type", "application/json");
+      fs.createReadStream(jsonFile).pipe(res);
+    }
   } catch (err) {
     console.error(`Error handling JSON report for ${reportname}:`, err);
     res
@@ -59,7 +87,12 @@ async function handleJsonReport(reportname, reportData, res, queryParams) {
   }
 }
 
-async function generatePdfContent(reportname, reportData, queryParams) {
+async function generatePdfContent(
+  reportname,
+  reportData,
+  queryParams,
+  isDownload = false
+) {
   const countryFlags = await loadCountryFlags();
   const htmlContent = generateHtmlContent(
     reportname,
@@ -75,22 +108,35 @@ async function generatePdfContent(reportname, reportData, queryParams) {
 
   const page = await browser.newPage();
   await page.setContent(htmlContent, { waitUntil: "networkidle2" });
+
+  // Wait for all images to load
+  await page.evaluate(async () => {
+    const images = Array.from(document.images);
+    await Promise.all(
+      images.map((img) => {
+        if (img.complete) return Promise.resolve();
+        return new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+        });
+      })
+    );
+  });
+
   const pdfBuffer = await page.pdf({ format: "A4" });
   await browser.close();
 
-  return pdfBuffer;
-}
+  // Ensure the pdfDir exists
+  const pdfDir = path.join(__dirname, "pdf");
+  if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir);
 
-async function loadCountryFlags() {
-  const xmlFile = path.join(__dirname, "countryFlags.xml");
-  const xmlData = fs.readFileSync(xmlFile, "utf-8");
-  const parser = new xml2js.Parser();
-  const result = await parser.parseStringPromise(xmlData);
-  const flags = {};
-  for (const [code, url] of Object.entries(result.flags)) {
-    flags[code] = url[0];
+  // Save the PDF buffer to the pdfDir if it's for download
+  if (isDownload) {
+    const pdfFile = path.join(pdfDir, `${reportname}.pdf`);
+    fs.writeFileSync(pdfFile, pdfBuffer);
   }
-  return flags;
+
+  return pdfBuffer;
 }
 
 function generateHtmlContent(
@@ -99,7 +145,11 @@ function generateHtmlContent(
   queryParams,
   countryFlags
 ) {
-  const queryParamsString = new URLSearchParams(queryParams).toString();
+  // Remove unnecessary 'reportList' parameter
+  const cleanQueryParams = { ...queryParams };
+  delete cleanQueryParams.reportList;
+
+  const queryParamsString = new URLSearchParams(cleanQueryParams).toString();
   const permalink = `/report/${reportname}?${queryParamsString}`;
 
   let html = `
@@ -182,16 +232,3 @@ function generateHtmlContent(
 }
 
 module.exports = { handleJsonReport, handleCsvReport, generatePdfContent };
-
-// Helper function to flatten nested objects
-function flattenObject(obj, parent = "", res = {}) {
-  for (let key in obj) {
-    const propName = parent ? `${parent}.${key}` : key;
-    if (typeof obj[key] === "object" && !Array.isArray(obj[key])) {
-      flattenObject(obj[key], propName, res);
-    } else {
-      res[propName] = obj[key];
-    }
-  }
-  return res;
-}
