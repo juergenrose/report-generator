@@ -1,5 +1,4 @@
-const config = require("../config/mssql_db");
-const sql = require("mssql");
+const { pool1, sql } = require("../config/mssql_db");
 
 //predefined queries
 const predefinedQueries = [
@@ -125,7 +124,7 @@ async function getColumnTypes(columns, tableName) {
   }
 
   try {
-    const pool = await sql.connect(config);
+    const pool = pool1;
 
     //fetch column types from INFORMATION_SCHEMA.COLUMNS
     for (let col of columns) {
@@ -220,7 +219,8 @@ async function getSuggestions(params) {
     const query = queryObject.suggestionQuery;
 
     //connect to MSSQL db
-    const pool = await sql.connect(config);
+    const pool = pool1;
+
     const request = pool.request();
 
     //bind input parameter for the suggestion query
@@ -270,7 +270,8 @@ async function runQuery(params) {
 
 async function runReport(params) {
   try {
-    const pool = await sql.connect(config);
+    const pool = pool1;
+
     const queryParams = await getQueryParams();
     console.log("Query parameters fetched:", queryParams);
 
