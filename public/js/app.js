@@ -1,30 +1,31 @@
 //fetches the list of available reports and populates the dropdown menu
 async function fetchReports() {
   try {
-    const response = await fetch("/report");
+    const response = await fetch('/report');
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
     //parse the response body as JSON
     const data = await response.json();
 
-    const reportList = document.getElementById("reportList");
+    const reportList = document.getElementById('reportList');
     //populate the dropdown with the fetched reports
     reportList.innerHTML = `
-      <option value="-- reportname --">-- Select a report --</option>
+      <option value="">-- Select a report --</option>
       ${data.reports
         .map((report) => `<option value="${report}">${report}</option>`)
-        .join("")}
+        .join('')}
     `;
   } catch (error) {
-    console.error("Error fetching reports:", error);
-    alert("Failed to fetch reports. Please try again.");
+    console.error('Error fetching reports:', error);
+    alert('Failed to fetch reports. Please try again.');
   }
 }
 
+
 //helper function to convert camelCase to Title Case
 function splitCamelCase(input) {
-  const spacedString = input.replace(/([A-Z])/g, " $1");
+  const spacedString = input.replace(/([A-Z])/g, ' $1');
   const titleCaseString = spacedString.replace(/\w\S*/g, function (txt) {
     return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
   });
@@ -32,14 +33,13 @@ function splitCamelCase(input) {
 }
 
 //function to fetch parameters for the selected report
-async function fetchParams() {
-  //get the selected report name from the dropdown
-  const reportname = document.getElementById("reportList").value;
-  //get the element to display parameter input fields
-  const paramList = document.getElementById("paramList");
+async function fetchParams(reportname = null, barcode = null) {
+  //get the selected report name from the dropdown if not provided
+  reportname = reportname || document.getElementById('reportList').value;
+  const paramList = document.getElementById('paramList');
 
   //check if a valid report is selected
-  if (reportname === "-- Select a report --") {
+  if (!reportname || reportname === '-- Select a report --') {
     paramList.innerHTML = `<p class="error">Please select a valid report.</p>`;
     return;
   }
@@ -52,59 +52,54 @@ async function fetchParams() {
       return;
     }
 
-    const today = new Date().toISOString().split("T")[0];
-    const now = new Date();
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const startDate = lastMonth.toISOString().split("T")[0];
-
     const paramInputs = Object.keys(parameters)
       .map((param) => {
         const { type } = parameters[param];
-        const inputType =
-          type.toLowerCase() === "date" ||
-          type.toLowerCase() === "smalldatetime" ||
-          type.toLowerCase() === "datetime"
-            ? "date"
-            : "text";
-        const defaultValue =
-          inputType === "date"
-            ? `value="${param === "endDate" ? today : startDate}"`
-            : "";
+        const inputType = type.toLowerCase() === 'date' || type.toLowerCase() === 'smalldatetime' || type.toLowerCase() === 'datetime' ? 'date' : 'text';
+        const defaultValue = param === 'BIDNR' && barcode ? `value="${barcode}"` : '';
         const label = splitCamelCase(param);
         return `
           <div class="paramInput">
             <label for="${param}">${label} (${type})</label><br>
-            <input type="${inputType}" id="${param}" name="${param}" oninput="fetchSuggestions('${reportname}', '${param}', this.value)" ${defaultValue}>
+            <input type="${inputType}" id="${param}" name="${param}" ${defaultValue}>
             <div id="${param}-results" class="results"></div>
           </div>
         `;
       })
-      .join("");
-    //populate the parameter list with generated input fields
+      .join('');
     paramList.innerHTML = paramInputs;
   } catch (error) {
-    console.error("Error fetching parameters:", error);
-    //display error message
+    console.error('Error fetching parameters:', error);
     paramList.innerHTML = `<p class="error">An error occurred while fetching parameters.</p>`;
   }
+}
+
+// Modified fetchParamsForBarcode function to use fetchParams
+async function fetchParamsForBarcode(reportname, barcode) {
+  fetchParams(reportname, barcode);
+}
+
+// Modified fetchParamsForBarcode function to use fetchParams
+async function fetchParamsForBarcode(reportname, barcode) {
+  fetchParams(reportname, barcode);
 }
 
 //handles the form submission to display the JSON report data
 async function showJsonOutput(event) {
   //prevent the default form submission behavior
   event.preventDefault();
-  const reportname = document.getElementById("reportList").value;
-  const form = document.getElementById("reportForm");
-  const jsonOutput = document.getElementById("jsonOutput");
-  const csvOutput = document.getElementById("csvOutput");
-  const pdfOutput = document.getElementById("pdfOutput");
+  const reportname = document.getElementById('reportList').value;
+  const form = document.getElementById('reportForm');
+  const jsonOutput = document.getElementById('jsonOutput');
+  const csvOutput = document.getElementById('csvOutput');
+  const pdfOutput = document.getElementById('pdfOutput');
 
   //check if a valid report is selected
-  if (reportname === "-- Select a report --") {
+  if (reportname === '-- Select a report --') {
     document.getElementById(
-      "paramList"
+      'paramList'
     ).innerHTML = `<p class="error">Please select a valid report before generating.</p>`;
-    jsonOutput.style.display = "none";
+    jsonOutput.style.display = 'none';
     return;
   }
 
@@ -121,7 +116,7 @@ async function showJsonOutput(event) {
     const prettifiedJson = JSON.stringify(jsonData, null, 2);
 
     document.getElementById(
-      "reportData"
+      'reportData'
     ).innerHTML = `<pre>${prettifiedJson}</pre>`;
 
     //convert to CSV and display
@@ -131,7 +126,7 @@ async function showJsonOutput(event) {
 
     //set up PDF preview but don't download it yet
     const pdfUrl = `/report/${reportname}?${params}&format=pdf`;
-    const pdfResponse = await fetch(pdfUrl, { method: "GET" });
+    const pdfResponse = await fetch(pdfUrl, { method: 'GET' });
     if (!pdfResponse.ok) {
       throw new Error(`Failed to generate PDF: ${await pdfResponse.text()}`);
     }
@@ -142,14 +137,14 @@ async function showJsonOutput(event) {
     //set PDF as the default active tab
     const event = {
       currentTarget: document.querySelector(
-        ".tablinks[onclick=\"openTab(event, 'pdfOutput')\"]"
+        '.tablinks[onclick="openTab(event, \'pdfOutput\')"]'
       ),
     };
-    openTab(event, "pdfOutput");
+    openTab(event, 'pdfOutput');
   } catch (error) {
-    console.error("Error generating report:", error);
+    console.error('Error generating report:', error);
     document.getElementById(
-      "reportData"
+      'reportData'
     ).innerHTML = `<p class="error">An error occurred while generating the report.</p>`;
   }
 }
@@ -157,18 +152,18 @@ async function showJsonOutput(event) {
 //function to handle downloading the report
 async function downloadReport(event) {
   event.preventDefault();
-  const reportname = document.getElementById("reportList").value;
-  const format = document.getElementById("format").value;
+  const reportname = document.getElementById('reportList').value;
+  const format = document.getElementById('format').value;
 
   //Validate selected report name and format
-  if (reportname === "-- Select a report --" || format === "") {
+  if (reportname === '-- Select a report --' || format === '') {
     document.getElementById(
-      "paramList"
+      'paramList'
     ).innerHTML = `<p class="error">Please select a valid report and format before downloading.</p>`;
     return;
   }
 
-  const form = document.getElementById("reportForm");
+  const form = document.getElementById('reportForm');
   const params = new URLSearchParams(new FormData(form)).toString();
   //construct the URL with query parameters
   const url = `/report/${reportname}?${params}&format=${format}&download=true`;
@@ -179,23 +174,23 @@ async function downloadReport(event) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
     //process the response based on the selected format
-    if (format === "json") {
+    if (format === 'json') {
       const jsonData = await response.json(); //get JSON data
       const jsonBlob = new Blob([JSON.stringify(jsonData, null, 2)], {
-        type: "application/json",
+        type: 'application/json',
       });
-      downloadBlob(jsonBlob, "application/json", `${reportname}.json`); //download JSON file
-    } else if (format === "csv") {
+      downloadBlob(jsonBlob, 'application/json', `${reportname}.json`); //download JSON file
+    } else if (format === 'csv') {
       const csvData = await response.text(); //get CSV data as text
-      downloadBlob(csvData, "text/csv", `${reportname}.csv`); //download CSV file
-    } else if (format === "pdf") {
+      downloadBlob(csvData, 'text/csv', `${reportname}.csv`); //download CSV file
+    } else if (format === 'pdf') {
       const pdfBlob = await response.blob(); //get PDF data as blob
-      downloadBlob(pdfBlob, "application/pdf", `${reportname}.pdf`); //download PDF file
+      downloadBlob(pdfBlob, 'application/pdf', `${reportname}.pdf`); //download PDF file
     } else {
-      throw new Error("Invalid format specified."); 
+      throw new Error('Invalid format specified.');
     }
   } catch (error) {
-    console.error("Error downloading report:", error);
+    console.error('Error downloading report:', error);
   }
 }
 
@@ -203,7 +198,7 @@ async function downloadReport(event) {
 function downloadBlob(blobContent, mimeType, filename) {
   const blob = new Blob([blobContent], { type: mimeType }); //create a blob with the specified content and MIME type
   const url = URL.createObjectURL(blob); //create a URL for the blob
-  const a = document.createElement("a"); // create an anchor element
+  const a = document.createElement('a'); // create an anchor element
   a.href = url; //set the URL as the href of the anchor
   a.download = filename; //set the filename for the download
   document.body.appendChild(a); //append the anchor to the document
@@ -215,30 +210,30 @@ function downloadBlob(blobContent, mimeType, filename) {
 //function to handle tab navigation
 function openTab(event, tabName) {
   //get all elements with class "tabcontent" and hide them
-  const tabcontent = document.getElementsByClassName("tabcontent");
+  const tabcontent = document.getElementsByClassName('tabcontent');
   for (let i = 0; i < tabcontent.length; i++) {
-    tabcontent[i].style.display = "none";
+    tabcontent[i].style.display = 'none';
   }
   //get all elements with class "tablinks" and remove the "active" class
-  const tablinks = document.getElementsByClassName("tablinks");
+  const tablinks = document.getElementsByClassName('tablinks');
   for (let i = 0; i < tablinks.length; i++) {
-    tablinks[i].className = tablinks[i].className.replace(" active", "");
+    tablinks[i].className = tablinks[i].className.replace(' active', '');
   }
   //show the current tab and add an "active" class to the button that opened the tab
   const tabElement = document.getElementById(tabName);
   if (tabElement) {
-    tabElement.style.display = "block";
+    tabElement.style.display = 'block';
   } else {
     console.error(`Tab element with id "${tabName}" not found.`);
   }
   if (event.currentTarget) {
-    event.currentTarget.className += " active";
+    event.currentTarget.className += ' active';
   } else {
-    console.error("Event currentTarget is null or undefined.");
+    console.error('Event currentTarget is null or undefined.');
   }
 }
 
 //execute code when the DOM content has finished loading
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener('DOMContentLoaded', () => {
   fetchReports();
 });
