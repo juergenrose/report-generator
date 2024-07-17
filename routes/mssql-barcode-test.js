@@ -23,15 +23,9 @@ async function checkBarcode(barcode) {
   try {
     const pool = pool2;
     const request = pool.request();
-    const queryObject = predefinedQueries.find(
-      (q) => q.suggestionParam === "BIDNR"
-    );
-    if (!queryObject) {
-      throw new Error(`No query found for parameter: BIDNR`);
-    }
-    request.input("BIDNR", sql.NVarChar, barcode);
-    const result = await request.query(queryObject.query);
-    return result.recordset.length > 0 ? result.recordset : null;
+    request.input('BIDNR', barcode);
+    const result = await request.query('SELECT * FROM BEHAELTER WHERE BIDNR = @BIDNR');
+    return result.recordset.length > 0;
   } catch (err) {
     console.error("Database query error:", err);
     throw err;
