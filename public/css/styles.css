@@ -177,31 +177,38 @@ input[type='date']:hover {
   cursor: pointer;
 }
 
-.barcodeInput {
+/*******************
+* barcode input styles
+********************/
+#barcodeInputDiv {
   display: flex;
   align-items: center;
   margin-top: 1em;
 }
-.barcodeInput input {
+#barcodeInputDiv input {
   flex-grow: 1;
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px 0 0 4px;
+  box-sizing: border-box;
 }
-.barcodeInput img {
-  width: 25px;
-  height: auto;
-}
-.barcodeInput button {
+#barcodeInputDiv button {
   background-color: #222;
   color: white;
   border: none;
   border-radius: 0 4px 4px 0;
   margin: -1em 0 0 0;
+
   cursor: pointer;
   padding: 8px;
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
+  height: 100%;
+}
+#barcodeInputDiv img {
+  width: 25px;
+  height: auto;
 }
 
 #reportData {
