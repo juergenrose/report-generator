@@ -1,47 +1,44 @@
-const { pool1, sql } = require("../config/mssql_db");
+/** @format */
+
+const { pool1, sql } = require('../config/mssql_db');
 
 //predefined queries
 const predefinedQueries = [
   {
-    suggestionParam: "StartDate",
+    suggestionParam: 'StartDate',
     suggestionQuery:
       "SELECT DISTINCT FORMAT(Datum, 'yyyy-MM-dd') AS StartDate FROM Kontrolle WHERE FORMAT(Datum, 'yyyy-MM-dd') LIKE @input + '%'",
     params: [],
     query:
-      "SELECT * FROM Kontrolle WHERE Durchfuehrender = @Durchfuehrender AND Datum = @StartDate",
-    tableName: "Kontrolle",
+      'SELECT * FROM Kontrolle WHERE Durchfuehrender = @Durchfuehrender AND Datum = @StartDate',
+    tableName: 'Kontrolle',
   },
   {
-    suggestionParam: "EndDate",
+    suggestionParam: 'EndDate',
     suggestionQuery:
       "SELECT DISTINCT FORMAT(Datum, 'yyyy-MM-dd') AS EndDate FROM Kontrolle WHERE FORMAT(Datum, 'yyyy-MM-dd') LIKE @input + '%'",
     params: [],
     query:
-      "SELECT * FROM Kontrolle WHERE Durchfuehrender = @Durchfuehrender AND Datum = @EndDate",
-    tableName: "Kontrolle",
+      'SELECT * FROM Kontrolle WHERE Durchfuehrender = @Durchfuehrender AND Datum = @EndDate',
+    tableName: 'Kontrolle',
   },
   {
-    suggestionParam: "Durchfuehrender",
+    suggestionParam: 'Durchfuehrender',
     suggestionQuery:
       "SELECT DISTINCT Durchfuehrender FROM Kontrolle WHERE Durchfuehrender LIKE @input + '%'",
-    params: ["Durchfuehrender", "StartDate", "EndDate"],
+    params: ['Durchfuehrender', 'StartDate', 'EndDate'],
     query:
-      "SELECT * FROM Kontrolle WHERE Durchfuehrender = @Durchfuehrender AND Datum BETWEEN @StartDate AND @EndDate",
-    tableName: "Kontrolle",
+      'SELECT * FROM Kontrolle WHERE Durchfuehrender = @Durchfuehrender AND Datum BETWEEN @StartDate AND @EndDate',
+    tableName: 'Kontrolle',
   },
 ];
 
 //mapping parameter names to column names
 const paramColumnMapping = {
-  StartDate: "Datum",
-  EndDate: "Datum",
-  Durchfuehrender: "Durchfuehrender",
+  StartDate: 'Datum',
+  EndDate: 'Datum',
+  Durchfuehrender: 'Durchfuehrender',
 };
-
-//startDate is default set to the first day of the previous month
-const now = new Date();
-const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-const startDate = lastMonth.toISOString().split("T")[0]; //format as "YYYY-MM-DD"
 
 //function to map database type (dbType) to mssql data types
 function sqlTypeFromDb(dbType) {
@@ -50,63 +47,63 @@ function sqlTypeFromDb(dbType) {
   }
   const lowerDbType = dbType.toLowerCase();
   switch (lowerDbType) {
-    case "int":
+    case 'int':
       return sql.Int;
-    case "bigint":
+    case 'bigint':
       return sql.BigInt;
-    case "smallint":
+    case 'smallint':
       return sql.SmallInt;
-    case "tinyint":
+    case 'tinyint':
       return sql.TinyInt;
-    case "bit":
+    case 'bit':
       return sql.Bit;
-    case "varchar":
+    case 'varchar':
       return sql.VarChar(sql.MAX);
-    case "nvarchar":
+    case 'nvarchar':
       return sql.NVarChar(sql.MAX);
-    case "char":
+    case 'char':
       return sql.Char;
-    case "nchar":
+    case 'nchar':
       return sql.NChar;
-    case "text":
+    case 'text':
       return sql.Text;
-    case "ntext":
+    case 'ntext':
       return sql.NText;
-    case "binary":
+    case 'binary':
       return sql.Binary;
-    case "varbinary":
+    case 'varbinary':
       return sql.VarBinary;
-    case "image":
+    case 'image':
       return sql.Image;
-    case "uniqueidentifier":
+    case 'uniqueidentifier':
       return sql.UniqueIdentifier;
-    case "date":
+    case 'date':
       return sql.Date;
-    case "datetime":
+    case 'datetime':
       return sql.DateTime;
-    case "smalldatetime":
+    case 'smalldatetime':
       return sql.SmallDateTime;
-    case "datetime2":
+    case 'datetime2':
       return sql.DateTime2;
-    case "datetimeoffset":
+    case 'datetimeoffset':
       return sql.DateTimeOffset;
-    case "time":
+    case 'time':
       return sql.Time;
-    case "float":
+    case 'float':
       return sql.Float;
-    case "real":
+    case 'real':
       return sql.Real;
-    case "decimal":
+    case 'decimal':
       return sql.Decimal;
-    case "numeric":
+    case 'numeric':
       return sql.Numeric;
-    case "money":
+    case 'money':
       return sql.Money;
-    case "smallmoney":
+    case 'smallmoney':
       return sql.SmallMoney;
-    case "boolean":
+    case 'boolean':
       return sql.Bit; //use sql.Bit for boolean types
-    case "barcode":
+    case 'barcode':
       return sql.VarChar(sql.MAX); // new case for barcode, mapped to varchar
     default:
       console.warn(`Unknown dbType: ${dbType}. Defaulting to sql.NVarChar.`);
@@ -135,8 +132,8 @@ async function getColumnTypes(columns, tableName) {
           AND COLUMN_NAME = @columnName
       `;
       const request = pool.request();
-      request.input("tableName", sql.NVarChar, tableName);
-      request.input("columnName", sql.NVarChar, col);
+      request.input('tableName', sql.NVarChar, tableName);
+      request.input('columnName', sql.NVarChar, col);
 
       //execute the query to fetch column types
       const result = await request.query(query);
@@ -145,14 +142,14 @@ async function getColumnTypes(columns, tableName) {
         columnTypes[col] = dbType.toLowerCase();
       } else {
         console.warn(`Column '${col}' not found in table '${tableName}'.`);
-        columnTypes[col] = "Undefined";
+        columnTypes[col] = 'Undefined';
       }
     }
 
-    console.log("Fetched column types:", columnTypes);
+    console.log('Fetched column types:', columnTypes);
     return columnTypes;
   } catch (err) {
-    console.error("Error fetching column types:", err.message);
+    console.error('Error fetching column types:', err.message);
     throw err;
   }
 }
@@ -189,7 +186,7 @@ async function getQueryParams() {
         } else {
           //handle case where column type is not found
           params[param] = {
-            type: "Undefined",
+            type: 'Undefined',
             required: true,
           };
         }
@@ -224,7 +221,7 @@ async function getSuggestions(params) {
     const request = pool.request();
 
     //bind input parameter for the suggestion query
-    request.input("input", sql.NVarChar, input);
+    request.input('input', sql.NVarChar, input);
 
     //execute the suggestion query and retrieve results
     const result = await request.query(query);
@@ -253,7 +250,7 @@ async function runQuery(params) {
 
     return results;
   } catch (err) {
-    console.error("MS SQL Server Error:", err.sqlMessage);
+    console.error('MS SQL Server Error:', err.sqlMessage);
     const error = {
       data: null,
       error: {
@@ -273,19 +270,19 @@ async function runReport(params) {
     const pool = pool1;
 
     const queryParams = await getQueryParams();
-    console.log("Query parameters fetched:", queryParams);
+    console.log('Query parameters fetched:', queryParams);
 
     // Fetch column types for all parameters in 'params'
     const paramTypes = await getColumnTypes(Object.keys(queryParams));
-    console.log("Param types fetched:", paramTypes);
+    console.log('Param types fetched:', paramTypes);
 
     //execute all predefined queries concurrently
     const results = await Promise.all(
       predefinedQueries.map(({ query, params: queryParams }) => {
         //ensure the query is defined
         if (!query) {
-          console.error("Query is undefined");
-          throw new Error("Query is undefined");
+          console.error('Query is undefined');
+          throw new Error('Query is undefined');
         }
 
         //create a new request object for each query execution
@@ -340,7 +337,7 @@ async function runReport(params) {
     return { data: flattenedRecordSets };
   } catch (err) {
     //handle and log any errors that occur during query execution
-    console.error("Error in runReport:", err);
+    console.error('Error in runReport:', err);
     throw new Error(err.message);
   }
 }
