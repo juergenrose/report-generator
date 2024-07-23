@@ -1,21 +1,22 @@
+/** @format */
+
 const { pool2, sql } = require('../config/mssql_db');
 
 //predefined queries
 const predefinedQueries = [
   {
-    suggestionParam: "BIDNR",
+    suggestionParam: 'BIDNR',
     suggestionQuery:
       "SELECT DISTINCT BIDNR FROM BEHAELTER WHERE BIDNR LIKE @input + '%'",
-    params: ["BIDNR"],
-    query:
-      "SELECT * FROM BEHAELTER WHERE BIDNR = @BIDNR",
-    tableName: "BEHAELTER",
+    params: ['BIDNR'],
+    query: 'SELECT * FROM BEHAELTER WHERE BIDNR = @BIDNR',
+    tableName: 'BEHAELTER',
   },
 ];
 
 //mapping parameter names to column names
 const paramColumnMapping = {
-  BIDNR: "BIDNR",
+  BIDNR: 'BIDNR',
 };
 
 // Function to check if the scanned barcode exists in the database
@@ -24,19 +25,13 @@ async function checkBarcode(barcode) {
     const pool = pool2;
     const request = pool.request();
     request.input('BIDNR', barcode);
-    const result = await request.query('SELECT * FROM BEHAELTER WHERE BIDNR = @BIDNR');
+    const result = await request.query(predefinedQueries(query));
     return result.recordset.length > 0;
   } catch (err) {
-    console.error("Database query error:", err);
+    console.error('Database query error:', err);
     throw err;
   }
 }
-
-
-//startDate is default set to the first day of the previous month
-const now = new Date();
-const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-const startDate = lastMonth.toISOString().split("T")[0]; //format as "YYYY-MM-DD"
 
 //function to map database type (dbType) to mssql data types
 function sqlTypeFromDb(dbType) {
@@ -45,63 +40,63 @@ function sqlTypeFromDb(dbType) {
   }
   const lowerDbType = dbType.toLowerCase();
   switch (lowerDbType) {
-    case "int":
+    case 'int':
       return sql.Int;
-    case "bigint":
+    case 'bigint':
       return sql.BigInt;
-    case "smallint":
+    case 'smallint':
       return sql.SmallInt;
-    case "tinyint":
+    case 'tinyint':
       return sql.TinyInt;
-    case "bit":
+    case 'bit':
       return sql.Bit;
-    case "varchar":
+    case 'varchar':
       return sql.VarChar(sql.MAX);
-    case "nvarchar":
+    case 'nvarchar':
       return sql.NVarChar(sql.MAX);
-    case "char":
+    case 'char':
       return sql.Char;
-    case "nchar":
+    case 'nchar':
       return sql.NChar;
-    case "text":
+    case 'text':
       return sql.Text;
-    case "ntext":
+    case 'ntext':
       return sql.NText;
-    case "binary":
+    case 'binary':
       return sql.Binary;
-    case "varbinary":
+    case 'varbinary':
       return sql.VarBinary;
-    case "image":
+    case 'image':
       return sql.Image;
-    case "uniqueidentifier":
+    case 'uniqueidentifier':
       return sql.UniqueIdentifier;
-    case "date":
+    case 'date':
       return sql.Date;
-    case "datetime":
+    case 'datetime':
       return sql.DateTime;
-    case "smalldatetime":
+    case 'smalldatetime':
       return sql.SmallDateTime;
-    case "datetime2":
+    case 'datetime2':
       return sql.DateTime2;
-    case "datetimeoffset":
+    case 'datetimeoffset':
       return sql.DateTimeOffset;
-    case "time":
+    case 'time':
       return sql.Time;
-    case "float":
+    case 'float':
       return sql.Float;
-    case "real":
+    case 'real':
       return sql.Real;
-    case "decimal":
+    case 'decimal':
       return sql.Decimal;
-    case "numeric":
+    case 'numeric':
       return sql.Numeric;
-    case "money":
+    case 'money':
       return sql.Money;
-    case "smallmoney":
+    case 'smallmoney':
       return sql.SmallMoney;
-    case "boolean":
+    case 'boolean':
       return sql.Bit; //use sql.Bit for boolean types
-    case "barcode":
+    case 'barcode':
       return sql.VarChar(sql.MAX); // new case for barcode, mapped to varchar
     default:
       console.warn(`Unknown dbType: ${dbType}. Defaulting to sql.NVarChar.`);
@@ -120,7 +115,6 @@ async function getColumnTypes(columns, tableName) {
 
   try {
     const pool = pool2;
-
     // Fetch column types from INFORMATION_SCHEMA.COLUMNS
     for (let col of columns) {
       const query = `
@@ -130,8 +124,8 @@ async function getColumnTypes(columns, tableName) {
           AND COLUMN_NAME = @columnName
       `;
       const request = pool.request();
-      request.input("tableName", sql.NVarChar, tableName);
-      request.input("columnName", sql.NVarChar, col);
+      request.input('tableName', sql.NVarChar, tableName);
+      request.input('columnName', sql.NVarChar, col);
 
       // Execute the query to fetch column types
       const result = await request.query(query);
@@ -140,14 +134,14 @@ async function getColumnTypes(columns, tableName) {
         columnTypes[col] = dbType.toLowerCase();
       } else {
         console.warn(`Column '${col}' not found in table '${tableName}'.`);
-        columnTypes[col] = "Undefined";
+        columnTypes[col] = 'Undefined';
       }
     }
 
-    console.log("Fetched column types:", columnTypes);
+    console.log('Fetched column types:', columnTypes);
     return columnTypes;
   } catch (err) {
-    console.error("Error fetching column types:", err.message);
+    console.error('Error fetching column types:', err.message);
     throw err;
   }
 }
@@ -184,7 +178,7 @@ async function getQueryParams() {
         } else {
           // Handle case where column type is not found
           params[param] = {
-            type: "Undefined",
+            type: 'Undefined',
             required: true,
           };
         }
@@ -218,7 +212,7 @@ async function getSuggestions(params) {
     const request = pool.request();
 
     // Bind input parameter for the suggestion query
-    request.input("input", sql.NVarChar, input);
+    request.input('input', sql.NVarChar, input);
 
     // Execute the suggestion query and retrieve results
     const result = await request.query(query);
@@ -262,7 +256,7 @@ async function runQuery(params, pageNumber = 1, pageSize = 10) {
 
     return results.recordset;
   } catch (err) {
-    console.error("MS SQL Server Error:", err.sqlMessage);
+    console.error('MS SQL Server Error:', err.sqlMessage);
     const error = {
       data: null,
       error: {
@@ -281,11 +275,11 @@ async function runReport(params, pageNumber = 1, pageSize = 10) {
   try {
     const pool = pool2;
     const queryParams = await getQueryParams();
-    console.log("Query parameters fetched:", queryParams);
+    console.log('Query parameters fetched:', queryParams);
 
     // Fetch column types for all parameters in 'params'
     const paramTypes = await getColumnTypes(Object.keys(queryParams));
-    console.log("Param types fetched:", paramTypes);
+    console.log('Param types fetched:', paramTypes);
 
     // Pagination logic
     const offset = (pageNumber - 1) * pageSize;
@@ -295,8 +289,8 @@ async function runReport(params, pageNumber = 1, pageSize = 10) {
       predefinedQueries.map(({ query, params: queryParams }) => {
         // Ensure the query is defined
         if (!query) {
-          console.error("Query is undefined");
-          throw new Error("Query is undefined");
+          console.error('Query is undefined');
+          throw new Error('Query is undefined');
         }
 
         // Create a new request object for each query execution
@@ -358,10 +352,15 @@ async function runReport(params, pageNumber = 1, pageSize = 10) {
     return { data: flattenedRecordSets };
   } catch (err) {
     // Handle and log any errors that occur during query execution
-    console.error("Error in runReport:", err);
+    console.error('Error in runReport:', err);
     throw new Error(err.message);
   }
 }
 
-
-module.exports = { runQuery, runReport, getQueryParams, getSuggestions, checkBarcode };
+module.exports = {
+  runQuery,
+  runReport,
+  getQueryParams,
+  getSuggestions,
+  checkBarcode,
+};
