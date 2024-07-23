@@ -1,14 +1,16 @@
-const json2csv = require("json2csv");
-const fs = require("fs");
-const path = require("path");
-const puppeteer = require("puppeteer");
-const xml2js = require("xml2js");
+/** @format */
+
+const json2csv = require('json2csv');
+const fs = require('fs');
+const path = require('path');
+const puppeteer = require('puppeteer');
+const xml2js = require('xml2js');
 
 // Helper function to flatten nested objects
-function flattenObject(obj, parent = "", res = {}) {
+function flattenObject(obj, parent = '', res = {}) {
   for (let key in obj) {
     const propName = parent ? `${parent}.${key}` : key;
-    if (typeof obj[key] === "object" && !Array.isArray(obj[key])) {
+    if (typeof obj[key] === 'object' && !Array.isArray(obj[key])) {
       flattenObject(obj[key], propName, res);
     } else {
       res[propName] = obj[key];
@@ -19,8 +21,8 @@ function flattenObject(obj, parent = "", res = {}) {
 
 async function loadCountryFlags() {
   try {
-    const xmlFile = path.join(__dirname, "countryFlags.xml");
-    const xmlData = fs.readFileSync(xmlFile, "utf-8");
+    const xmlFile = path.join(__dirname, 'countryFlags.xml');
+    const xmlData = fs.readFileSync(xmlFile, 'utf-8');
     const parser = new xml2js.Parser();
     const result = await parser.parseStringPromise(xmlData);
     const flags = {};
@@ -29,8 +31,8 @@ async function loadCountryFlags() {
     }
     return flags;
   } catch (err) {
-    console.error("Error loading country flags:", err);
-    throw new Error("Failed to load country flags.");
+    console.error('Error loading country flags:', err);
+    throw new Error('Failed to load country flags.');
   }
 }
 
@@ -40,7 +42,7 @@ async function handleCsvReport(reportname, reportData) {
     const flattenedData = data.map((item) => flattenObject(item));
     const csvData = json2csv.parse(flattenedData);
 
-    const csvDir = path.join(__dirname, "csv");
+    const csvDir = path.join(__dirname, 'csv');
     const csvFile = path.join(csvDir, `${reportname}.csv`);
 
     if (!fs.existsSync(csvDir)) fs.mkdirSync(csvDir);
@@ -63,7 +65,7 @@ async function handleJsonReport(
   isDownload = false
 ) {
   try {
-    const jsonDir = path.join(__dirname, "json");
+    const jsonDir = path.join(__dirname, 'json');
     const jsonFile = path.join(jsonDir, `${reportname}.json`);
 
     if (!fs.existsSync(jsonDir)) fs.mkdirSync(jsonDir);
@@ -73,10 +75,10 @@ async function handleJsonReport(
     if (isDownload) {
       // Send the JSON file to the client for download
       res.setHeader(
-        "Content-disposition",
+        'Content-disposition',
         `attachment; filename=${reportname}.json`
       );
-      res.setHeader("Content-Type", "application/json");
+      res.setHeader('Content-Type', 'application/json');
       fs.createReadStream(jsonFile).pipe(res);
     }
   } catch (err) {
@@ -102,12 +104,12 @@ async function generatePdfContent(
   );
 
   const browser = await puppeteer.launch({
-    args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
     timeout: 60000, // Increase timeout to 60 seconds
   });
 
   const page = await browser.newPage();
-  await page.setContent(htmlContent, { waitUntil: "networkidle2" });
+  await page.setContent(htmlContent, { waitUntil: 'networkidle2' });
 
   // Wait for all images to load
   await page.evaluate(async () => {
@@ -123,11 +125,20 @@ async function generatePdfContent(
     );
   });
 
-  const pdfBuffer = await page.pdf({ format: "A4" });
+  const pdfBuffer = await page.pdf({
+    format: 'A4',
+    margin: {
+      top: '20mm',
+      bottom: '20mm',
+      left: '10mm',
+      right: '10mm',
+    },
+  });
+
   await browser.close();
 
   // Ensure the pdfDir exists
-  const pdfDir = path.join(__dirname, "pdf");
+  const pdfDir = path.join(__dirname, 'pdf');
   if (!fs.existsSync(pdfDir)) fs.mkdirSync(pdfDir);
 
   // Save the PDF buffer to the pdfDir if it's for download
@@ -158,20 +169,20 @@ function generateHtmlContent(
     <head>
       <title>${reportname} Report</title>
       <style>
-        body { font-family: Arial, sans-serif; margin: 50px; }
+        body { font-family: Arial, sans-serif; }
         header { display: flex; justify-content: space-between; align-items: center; }
         header img { height: 40px; }
         header div { text-align: right; margin:0; }
         header div p { margin: 0; }
         h1 { font-size: 20px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; border-bottom: 1px solid #ccc;}
-        th, td { border: 1px solid #dddddd; text-align: left; padding: 8px; }
+        th, td { border: 1px solid #dddddd; text-align: left; padding: 10px; }
         th { background-color: #f2f2f2; }
         .section { margin-bottom: 20px; }
         .section h2 { margin-top: 10px; }
         img.flag { width: 40px; height: 30px; margin: 10px 0; justify-self: center; }
-        p { font-size: 14px; margin: 10px 0; } /* Add margin to <p> elements for spacing */
-        .entry { margin-bottom: 30px; border-bottom: 1px solid #ccc; } /* Add margin to each entry for spacing */
+        p { font-size: 14px; margin: 10px 0; } /*  Add margin to <p> elements for spacing  */
+        .entry { margin-bottom: 25px; border-bottom: 1px solid #ccc; } /* Add margin to each entry for spacing */
         .entry-header { display: flex; justify-content: space-between; align-items: center; }
         .entry-header div { flex: 1; }
         .entry-header div:last-child { text-align: right; }
@@ -184,8 +195,8 @@ function generateHtmlContent(
           <p>Created on: ${new Date().toLocaleString()}</p>
         </div>
         <img src="data:image/png;base64,${fs.readFileSync(
-          path.join(__dirname, "logo.png"),
-          { encoding: "base64" }
+          path.join(__dirname, 'logo.png'),
+          { encoding: 'base64' }
         )}" alt="Logo" />
       </header>
       <hr>
@@ -194,7 +205,7 @@ function generateHtmlContent(
 
   reportData.data.forEach((record) => {
     const countryCode = record.CountryCode;
-    const flagUrl = countryFlags[countryCode] || "";
+    const flagUrl = countryFlags[countryCode] || '';
 
     html += `<div class="entry">`;
     if (countryCode) {
@@ -202,7 +213,7 @@ function generateHtmlContent(
         ${
           flagUrl
             ? `<img src="${flagUrl}" alt="Flag of ${countryCode}" class="flag"/>`
-            : ""
+            : ''
         }
         <p><strong>Country Code:</strong> ${countryCode}</p>`;
     }
@@ -216,7 +227,7 @@ function generateHtmlContent(
     }
     // Remaining entries
     Object.entries(record).forEach(([key, value]) => {
-      if (key !== "CountryCode" && key !== "ID" && key !== "Durchfuehrender") {
+      if (key !== 'CountryCode' && key !== 'ID' && key !== 'Durchfuehrender') {
         html += `<p><strong>${key}:</strong> ${value}</p>`;
       }
     });
