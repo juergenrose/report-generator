@@ -38,12 +38,18 @@ async function fetchParams(reportname = null, barcode = null) {
   //get the selected report name from the dropdown if not provided
   reportname = reportname || document.getElementById('reportList').value;
   const paramList = document.getElementById('paramList');
+  const barcodeInputDiv = document.getElementById('barcodeInputDiv');
 
   //check if a valid report is selected
   if (!reportname || reportname === '-- Select a report --') {
     paramList.innerHTML = `<p class="error">Please select a valid report.</p>`;
+    barcodeInputDiv.style.display = 'none';
     return;
   }
+
+  //show the barcode input div
+  barcodeInputDiv.style.display = 'flex';
+
   try {
     const response = await fetch(`/report/${reportname}`);
     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
@@ -94,6 +100,15 @@ async function fetchParams(reportname = null, barcode = null) {
     paramList.innerHTML = `<p class="error">An error occurred while fetching parameters.</p>`;
   }
 }
+
+document.getElementById('barcodeInput').addEventListener('input', (event) => {
+  const barcode = event.target.value;
+  const reportname = document.getElementById('reportList').value;
+
+  if (barcode) {
+    fetchParamsForBarcode(reportname, barcode);
+  }
+});
 
 //modified fetchParamsForBarcode function to use fetchParams
 async function fetchParamsForBarcode(reportname, barcode) {
@@ -148,7 +163,7 @@ async function showJsonOutput(event) {
     }
     const pdfBlob = await pdfResponse.blob();
     const pdfUrlObject = URL.createObjectURL(pdfBlob);
-    pdfOutput.innerHTML = `<embed src="${pdfUrlObject}" type="application/pdf" width="100%" height="800px" />`;
+    pdfOutput.innerHTML = `<embed src="${pdfUrlObject}#zoom=125" type="application/pdf" width="100%" height="800px" />`;
 
     //set PDF as the default active tab
     const event = {
