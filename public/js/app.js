@@ -1,3 +1,5 @@
+/** @format */
+
 //fetches the list of available reports and populates the dropdown menu
 async function fetchReports() {
   try {
@@ -21,7 +23,6 @@ async function fetchReports() {
     alert('Failed to fetch reports. Please try again.');
   }
 }
-
 
 //helper function to convert camelCase to Title Case
 function splitCamelCase(input) {
@@ -52,16 +53,36 @@ async function fetchParams(reportname = null, barcode = null) {
       return;
     }
 
+    //startDate is default set to the first day of the previous month
+    const today = new Date().toISOString().split('T')[0];
+    const now = new Date();
+    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const startDate = lastMonth.toISOString().split('T')[0];
+
     const paramInputs = Object.keys(parameters)
       .map((param) => {
         const { type } = parameters[param];
-        const inputType = type.toLowerCase() === 'date' || type.toLowerCase() === 'smalldatetime' || type.toLowerCase() === 'datetime' ? 'date' : 'text';
-        const defaultValue = param === 'BIDNR' && barcode ? `value="${barcode}"` : '';
+        const inputType =
+          type.toLowerCase() === 'date' ||
+          type.toLowerCase() === 'smalldatetime' ||
+          type.toLowerCase() === 'datetime'
+            ? 'date'
+            : 'text';
+
+        let defaultValue;
+        if (param === 'BIDNR' && barcode) {
+          defaultValue = `value="${barcode}"`;
+        } else if (inputType === 'date') {
+          defaultValue = `value="${param === 'endDate' ? today : startDate}"`;
+        } else {
+          defaultValue = '';
+        }
         const label = splitCamelCase(param);
+
         return `
           <div class="paramInput">
             <label for="${param}">${label} (${type})</label><br>
-            <input type="${inputType}" id="${param}" name="${param}" ${defaultValue}>
+            <input type="${inputType}" id="${param}" name="${param}" ${defaultValue} oninput="fetchSuggestions('${reportname}', '${param}', this.value)" ${defaultValue}>
             <div id="${param}-results" class="results"></div>
           </div>
         `;
@@ -74,14 +95,9 @@ async function fetchParams(reportname = null, barcode = null) {
   }
 }
 
-// Modified fetchParamsForBarcode function to use fetchParams
+//modified fetchParamsForBarcode function to use fetchParams
 async function fetchParamsForBarcode(reportname, barcode) {
-  fetchParams(reportname, barcode);
-}
-
-// Modified fetchParamsForBarcode function to use fetchParams
-async function fetchParamsForBarcode(reportname, barcode) {
-  fetchParams(reportname, barcode);
+  await fetchParams(reportname, barcode);
 }
 
 //handles the form submission to display the JSON report data
