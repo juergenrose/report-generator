@@ -360,7 +360,8 @@ input[type='date']:hover {
   padding: 10px 20px;
   margin: 0;
 }
-.results p:hover {
+.results p:hover,
+.results p:focus {
   background-color: #f0f0f0;
 }
 
@@ -379,7 +380,6 @@ input[type='date']:hover {
 /******************
 * CSV table styles
 *******************/
-
 table {
   border-radius: 8px;
   margin: auto;
@@ -468,7 +468,7 @@ embed {
 .stop,
 #scanAnotherBtn {
   padding: 12px 24px;
-  margin: 5px;
+  margin-top: 20px;
   font-size: 16px;
   border: none;
   border-radius: 16px;
@@ -500,22 +500,10 @@ embed {
   justify-content: center;
   align-items: center;
 }
-#result a {
-  color: #e6e6e6;
-  font-size: 16px;
-}
 #result p {
   margin-top: 1em;
   font-size: 16px;
   color: #fafafa;
-}
-.success {
-  font-size: 26px;
-  color: #57a864;
-}
-.noCode {
-  font-size: 26px;
-  color: #ff4a4a;
 }
 .errCode {
   text-align: center;
@@ -527,21 +515,6 @@ embed {
   border-radius: 4px;
   background-color: #cf2e2e;
   color: #fafafa;
-}
-.successCode {
-  text-align: center;
-  margin: auto;
-  margin-top: 1em;
-  padding: 10px;
-  width: 350px;
-  border: none;
-  border-radius: 4px;
-  background-color: #478d53;
-  color: #fafafa;
-}
-.infoCode {
-  font-size: 18px;
-  text-decoration: underline;
 }
 #scanHeader {
   font-size: 26px;
