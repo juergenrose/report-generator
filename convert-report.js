@@ -170,19 +170,21 @@ function generateHtmlContent(
       <title>${reportname} Report</title>
       <style>
         body { font-family: Arial, sans-serif; }
-        header { display: flex; justify-content: space-between; align-items: center; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         header img { height: 40px; }
-        header div { text-align: right; margin:0; }
+        header div { text-align: right; margin:0;}
         header div p { margin: 0; }
-        h1 { font-size: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; border-bottom: 1px solid #ccc;}
-        th, td { border: 1px solid #dddddd; text-align: left; padding: 10px; }
+        h1 { font-size: 20px; margin-bottom: 5px; text-align: left; }
+        hr { border: 0; border-bottom: 1px solid #ccc; margin-top: 20px; }
+        a { display:block; margin: 20px 0 30px 0; text-align: center; font-size: 14px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px;}
+        th, td { text-align: left; padding: 10px; }
         th { background-color: #f2f2f2; }
         .section { margin-bottom: 20px; }
         .section h2 { margin-top: 10px; }
         img.flag { width: 40px; height: 30px; margin: 10px 0; justify-self: center; }
-        p { font-size: 14px; margin: 10px 0; } /*  Add margin to <p> elements for spacing  */
-        .entry { margin-bottom: 25px; border-bottom: 1px solid #ccc; } /* Add margin to each entry for spacing */
+        p { font-size: 14px; margin: 10px 0; } 
+        .entry { margin-bottom: 25px; border-bottom: 1px solid #ccc; } 
         .entry-header { display: flex; justify-content: space-between; align-items: center; }
         .entry-header div { flex: 1; }
         .entry-header div:last-child { text-align: right; }
@@ -200,7 +202,7 @@ function generateHtmlContent(
         )}" alt="Logo" />
       </header>
       <hr>
-        <a href="${permalink}" style="display:block; margin: 20px 0 30px 0; text-align: center; font-size: 14px">${permalink}</a>
+        <a href="${permalink}">${permalink}</a>
         <br>`;
 
   reportData.data.forEach((record) => {
