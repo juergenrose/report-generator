@@ -464,8 +464,7 @@ embed {
   margin: auto;
 }
 .start,
-.stop,
-#tryAgainBtn {
+.stop {
   padding: 12px 24px;
   margin-top: 20px;
   font-size: 16px;
@@ -490,13 +489,6 @@ embed {
 .stop:hover {
   background-color: #cf2e2e;
 }
-.tryAgainBtn {
-  background-color: #d6d6d6;
-  color: #111;
-}
-.tryAgainBtn:hover {
-  background-color: #c5c5c5;
-}
 #result {
   max-width: 600px;
   margin: auto;
@@ -504,11 +496,6 @@ embed {
   display: flexbox;
   justify-content: center;
   align-items: center;
-}
-#result p {
-  margin-top: 1em;
-  font-size: 16px;
-  color: #fafafa;
 }
 .errCode {
   text-align: center;
