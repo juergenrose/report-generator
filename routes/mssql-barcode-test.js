@@ -1,6 +1,6 @@
 /** @format */
 
-const { pool2, sql } = require('../config/mssql_db');
+const { pool2, sql, ensureConnected } = require('../config/mssql_db');
 
 //predefined queries
 const predefinedQueries = [
@@ -22,8 +22,8 @@ const paramColumnMapping = {
 // Function to check if the scanned barcode exists in the database
 async function checkBarcode(barcode) {
   try {
-    const pool = pool2;
-    const request = pool.request();
+    await ensureConnected(pool2);
+    const request = pool2.request();
     request.input('BIDNR', barcode);
     const result = await request.query(predefinedQueries(query));
     return result.recordset.length > 0;
@@ -107,6 +107,7 @@ function sqlTypeFromDb(dbType) {
 // Function to fetch column types for specified columns from the database
 async function getColumnTypes(columns, tableName) {
   const columnTypes = {};
+  await ensureConnected(pool2);
 
   if (columns.length === 0) {
     console.warn(`No columns specified. Skipping column type fetching.`);
@@ -114,7 +115,7 @@ async function getColumnTypes(columns, tableName) {
   }
 
   try {
-    const pool = pool2;
+    const pool = pool2.request();
     // Fetch column types from INFORMATION_SCHEMA.COLUMNS
     for (let col of columns) {
       const query = `
@@ -123,7 +124,8 @@ async function getColumnTypes(columns, tableName) {
         WHERE TABLE_NAME = @tableName
           AND COLUMN_NAME = @columnName
       `;
-      const request = pool.request();
+      await ensureConnected(pool2);
+      const request = pool2.request();
       request.input('tableName', sql.NVarChar, tableName);
       request.input('columnName', sql.NVarChar, col);
 
@@ -208,8 +210,8 @@ async function getSuggestions(params) {
     const query = queryObject.suggestionQuery;
 
     // Connect to MSSQL db
-    const pool = pool2;
-    const request = pool.request();
+    await ensureConnected(pool2);
+    const request = pool2.request();
 
     // Bind input parameter for the suggestion query
     request.input('input', sql.NVarChar, input);
@@ -243,8 +245,8 @@ async function runQuery(params, pageNumber = 1, pageSize = 10) {
     // Update query to include pagination
     const paginatedQuery = `${query} ORDER BY (SELECT NULL) OFFSET ${offset} ROWS FETCH NEXT ${pageSize} ROWS ONLY`;
 
-    const pool = pool2;
-    const request = pool.request();
+    await ensureConnected(pool2);
+    const request = pool2.request();
 
     // Bind parameters
     queryParams.forEach((param, index) => {
@@ -273,7 +275,7 @@ async function runQuery(params, pageNumber = 1, pageSize = 10) {
 
 async function runReport(params, pageNumber = 1, pageSize = 10) {
   try {
-    const pool = pool2;
+    await ensureConnected(pool2);
     const queryParams = await getQueryParams();
     console.log('Query parameters fetched:', queryParams);
 
@@ -286,7 +288,7 @@ async function runReport(params, pageNumber = 1, pageSize = 10) {
 
     // Execute all predefined queries concurrently
     const results = await Promise.all(
-      predefinedQueries.map(({ query, params: queryParams }) => {
+      predefinedQueries.map(async ({ query, params: queryParams }) => {
         // Ensure the query is defined
         if (!query) {
           console.error('Query is undefined');
@@ -294,7 +296,7 @@ async function runReport(params, pageNumber = 1, pageSize = 10) {
         }
 
         // Create a new request object for each query execution
-        const request = pool.request();
+        const request = pool2.request();
 
         // Extract parameter placeholders from the query
         const matches = query.match(/@[a-zA-Z0-9]+/g);

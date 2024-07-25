@@ -1,6 +1,6 @@
 /** @format */
 
-const { pool1, sql } = require('../config/mssql_db');
+const { pool1, sql, ensureConnected } = require('../config/mssql_db');
 
 //predefined queries
 const predefinedQueries = [
@@ -114,6 +114,7 @@ function sqlTypeFromDb(dbType) {
 //function to fetch column types for specified columns from the database
 async function getColumnTypes(columns, tableName) {
   const columnTypes = {};
+  await ensureConnected(pool1);
 
   if (columns.length === 0) {
     console.warn(`No columns specified. Skipping column type fetching.`);
@@ -121,8 +122,7 @@ async function getColumnTypes(columns, tableName) {
   }
 
   try {
-    const pool = pool1;
-
+    await ensureConnected(pool1);
     //fetch column types from INFORMATION_SCHEMA.COLUMNS
     for (let col of columns) {
       const query = `
@@ -131,7 +131,8 @@ async function getColumnTypes(columns, tableName) {
         WHERE TABLE_NAME = @tableName
           AND COLUMN_NAME = @columnName
       `;
-      const request = pool.request();
+      const request = pool1.request();
+
       request.input('tableName', sql.NVarChar, tableName);
       request.input('columnName', sql.NVarChar, col);
 
@@ -196,6 +197,7 @@ async function getQueryParams() {
 }
 
 async function getSuggestions(params) {
+  await ensureConnected(pool1);
   try {
     const { param, input } = params;
     //validate required parameters
@@ -216,9 +218,7 @@ async function getSuggestions(params) {
     const query = queryObject.suggestionQuery;
 
     //connect to MSSQL db
-    const pool = pool1;
-
-    const request = pool.request();
+    const request = pool1.request();
 
     //bind input parameter for the suggestion query
     request.input('input', sql.NVarChar, input);
@@ -267,7 +267,7 @@ async function runQuery(params) {
 
 async function runReport(params) {
   try {
-    const pool = pool1;
+    await ensureConnected(pool1);
 
     const queryParams = await getQueryParams();
     console.log('Query parameters fetched:', queryParams);
@@ -285,8 +285,7 @@ async function runReport(params) {
           throw new Error('Query is undefined');
         }
 
-        //create a new request object for each query execution
-        const request = pool.request();
+        const request = pool1.request();
 
         //extract parameter placeholders from the query
         const matches = query.match(/@[a-zA-Z0-9]+/g);
