@@ -35,18 +35,17 @@ function splitCamelCase(input) {
 
 //function to fetch parameters for the selected report
 async function fetchParams(reportname = null, barcode = null) {
-  //get the selected report name from the dropdown if not provided
-  reportname = reportname || document.getElementById('reportList').value;
+  const reportDropdown = document.getElementById('reportList');
   const paramList = document.getElementById('paramList');
   const barcodeInputDiv = document.getElementById('barcodeInputDiv');
 
-  //check if a valid report is selected
+  reportname = reportname || reportDropdown.value;
+
   if (!reportname || reportname === '-- Select a report --') {
     paramList.innerHTML = `<p class="error">Please select a valid report.</p>`;
     barcodeInputDiv.style.display = 'none';
     return;
   }
-
   //show the barcode input div
   barcodeInputDiv.style.display = 'flex';
 
@@ -54,35 +53,32 @@ async function fetchParams(reportname = null, barcode = null) {
     const response = await fetch(`/report/${reportname}`);
     if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
     const { parameters } = await response.json();
-    if (Object.keys(parameters).length === 0) {
+
+    if (!Object.keys(parameters).length) {
       paramList.innerHTML = `<p class="error">No parameters found for ${reportname}.</p>`;
       return;
     }
 
     //startDate is default set to the first day of the previous month
     const today = new Date().toISOString().split('T')[0];
-    const now = new Date();
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const startDate = lastMonth.toISOString().split('T')[0];
+    const lastMonth = new Date(new Date().setMonth(new Date().getMonth() - 1));
+    const startDate = new Date(lastMonth.getFullYear(), lastMonth.getMonth(), 1)
+      .toISOString()
+      .split('T')[0];
 
-    const paramInputs = Object.keys(parameters)
-      .map((param) => {
-        const { type } = parameters[param];
-        const inputType =
-          type.toLowerCase() === 'date' ||
-          type.toLowerCase() === 'smalldatetime' ||
-          type.toLowerCase() === 'datetime'
-            ? 'date'
-            : 'text';
-
-        let defaultValue;
-        if (param === 'BIDNR' && barcode) {
-          defaultValue = `value="${barcode}"`;
-        } else if (inputType === 'date') {
-          defaultValue = `value="${param === 'endDate' ? today : startDate}"`;
-        } else {
-          defaultValue = '';
-        }
+    paramList.innerHTML = Object.entries(parameters)
+      .map(([param, { type }]) => {
+        const inputType = ['date', 'smalldatetime', 'datetime'].includes(
+          type.toLowerCase()
+        )
+          ? 'date'
+          : 'text';
+        const defaultValue =
+          param === 'BIDNR' && barcode
+            ? `value="${barcode}"`
+            : inputType === 'date'
+            ? `value="${param === 'endDate' ? today : startDate}"`
+            : '';
         const label = splitCamelCase(param);
 
         return `
@@ -94,11 +90,14 @@ async function fetchParams(reportname = null, barcode = null) {
         `;
       })
       .join('');
-    paramList.innerHTML = paramInputs;
   } catch (error) {
     console.error('Error fetching parameters:', error);
     paramList.innerHTML = `<p class="error">An error occurred while fetching parameters.</p>`;
   }
+}
+
+function splitCamelCase(text) {
+  return text.replace(/([a-z])([A-Z])/g, '$1 $2');
 }
 
 document.getElementById('barcodeInput').addEventListener('input', (event) => {
