@@ -77,7 +77,7 @@ async function fetchParams(reportname = null, barcode = null) {
           param === 'BIDNR' && barcode
             ? `value="${barcode}"`
             : inputType === 'date'
-            ? `value="${param === 'endDate' ? today : startDate}"`
+            ? `value="${param === 'EndDate' ? today : startDate}"`
             : '';
         const label = splitCamelCase(param);
 
