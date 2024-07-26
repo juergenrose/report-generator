@@ -1,4 +1,7 @@
+<!-- @format -->
+
 # Report Generator Web Application
+
 **Still under development!**
 
 This web application generates and downloads reports in JSON, CSV, and PDF formats and includes a barcode scanning feature.
@@ -13,18 +16,18 @@ This web application generates and downloads reports in JSON, CSV, and PDF forma
 ## Installation
 
 1. Clone the repository:
-    ```bash
-    git clone https://github.com/your-username/report-generator.git
-    cd report-generator
-    ```
+   ```bash
+   git clone https://github.com/your-username/report-generator.git
+   cd report-generator
+   ```
 2. Install dependencies:
-    ```bash
-    npm install
-    ```
+   ```bash
+   npm install
+   ```
 3. Run the server:
-    ```bash
-    npm start
-    ```
+   ```bash
+   node index.js
+   ```
 
 ## Usage
 
@@ -36,7 +39,7 @@ This web application generates and downloads reports in JSON, CSV, and PDF forma
 
 - **HTML**: Layout (`index.html`)
 - **CSS**: Styles (`/css/styles.css`)
-- **JavaScript**: 
+- **JavaScript**:
   - **`app.js`**: Fetch reports, display parameters, generate report data.
   - **`scanner.js`**: Barcode scanning and handling.
   - **`converting.js`**: Convert JSON to CSV and generate PDF content.
@@ -61,5 +64,3 @@ Available at `http://localhost:3000/api-docs`.
 ## License
 
 Licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-
