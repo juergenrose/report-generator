@@ -1,5 +1,6 @@
-const db = require("../config/mysql_db").promise();
-const mysql = require("mysql2/promise");
+/** @format */
+
+const db = require('../config/mysql_db').promise();
 
 //predefined queries
 const predefinedQueries = [
@@ -19,31 +20,31 @@ const predefinedQueries = [
         city.CountryCode LIKE ? '%'
     GROUP BY 
       city.CountryCode, country.Name;`,
-    params: ["CountryCode"], //specify the expected parameters
+    params: ['CountryCode'], //specify the expected parameters
   },
   {
-    suggestionParam: "StartDate",
+    suggestionParam: 'StartDate',
     suggestionQuery: `SELECT DISTINCT DATE_FORMAT(Datum, '%Y-%m-%d') AS StartDate 
                       FROM City 
                       WHERE DATE_FORMAT(Datum, '%Y-%m-%d') LIKE CONCAT(?, '%')`,
     params: [],
-    tableName: "City",
+    tableName: 'City',
   },
   {
-    suggestionParam: "EndDate",
+    suggestionParam: 'EndDate',
     suggestionQuery: `SELECT DISTINCT DATE_FORMAT(Datum, '%Y-%m-%d') AS EndDate 
                       FROM City 
                       WHERE DATE_FORMAT(Datum, '%Y-%m-%d') LIKE CONCAT(?, '%')`,
     params: [],
-    tableName: "City",
+    tableName: 'City',
   },
   {
-    suggestionParam: "CountryCode",
+    suggestionParam: 'CountryCode',
     suggestionQuery: `SELECT DISTINCT CountryCode 
                       FROM City 
                       WHERE CountryCode LIKE CONCAT(?, '%')`,
     params: [],
-    tableName: "City",
+    tableName: 'City',
   },
 ];
 
@@ -54,23 +55,23 @@ async function getColumnTypes(columns) {
     SELECT COLUMN_NAME, DATA_TYPE
     FROM INFORMATION_SCHEMA.COLUMNS
     WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? AND COLUMN_NAME IN (${columns
-      .map(() => "?")
-      .join(", ")})
+      .map(() => '?')
+      .join(', ')})
   `;
 
-  const tableSchema = "world";
+  const tableSchema = 'world';
 
   try {
     if (!Array.isArray(columns) || columns.length === 0) {
-      throw new Error("Columns must be a non-empty array.");
+      throw new Error('Columns must be a non-empty array.');
     }
 
-    console.log("Executing getColumnTypes query:", query, [
+    console.log('Executing getColumnTypes query:', query, [
       tableSchema,
-      "city",
+      'city',
       ...columns,
     ]); //log the actual parameters sent to the query
-    const [results] = await db.query(query, [tableSchema, "city", ...columns]);
+    const [results] = await db.query(query, [tableSchema, 'city', ...columns]);
 
     results.forEach((row) => {
       columnTypes[row.COLUMN_NAME] = row.DATA_TYPE;
@@ -78,11 +79,11 @@ async function getColumnTypes(columns) {
 
     if (Object.keys(columnTypes).length === 0) {
       throw new Error(
-        "No column types found. Check if the columns exist in the database."
+        'No column types found. Check if the columns exist in the database.'
       );
     }
   } catch (err) {
-    console.error("Error fetching column types:", err);
+    console.error('Error fetching column types:', err);
     throw err;
   }
   return columnTypes;
@@ -109,7 +110,7 @@ async function getQueryParams() {
     //iterate over each parameter in the query
     queryParams.forEach((param) => {
       params[param] = {
-        type: columnTypes[param] || "Undefined", //use actual data type or default to 'Undefined' if not found
+        type: columnTypes[param] || 'Undefined', //use actual data type or default to 'Undefined' if not found
         required: true,
       };
     });
@@ -160,7 +161,7 @@ async function runQuery(params) {
     //return the combined result rows
     return results;
   } catch (err) {
-    console.error("MySQL Error:", err.sqlMessage);
+    console.error('MySQL Error:', err.sqlMessage);
     const error = {
       data: null,
       error: {
@@ -187,7 +188,7 @@ async function runReport(params, reportname) {
     //if there are missing required parameters, throw an error
     if (missingParams.length > 0) {
       throw new Error(
-        `Missing required parameters: ${missingParams.join(", ")}`
+        `Missing required parameters: ${missingParams.join(', ')}`
       );
     }
     //run the query with the correct parameters
