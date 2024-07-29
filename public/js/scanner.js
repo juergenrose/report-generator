@@ -7,6 +7,7 @@ const scanHeader = document.getElementById('scanHeader');
 const scanner = new Html5Qrcode('reader');
 const barcodeInput = document.getElementById('barcodeInput');
 const scanBtn = document.getElementById('scanBtn');
+const reportData = document.getElementById('reportData');
 
 //function to check if the scanned barcode exists in the database
 async function checkBarcodeInDB(barcode) {
@@ -21,13 +22,15 @@ async function checkBarcodeInDB(barcode) {
     const response = await fetch(`/report/${reportname}?BIDNR=${barcode}`);
     if (!response.ok) {
       const errorText = await response.text();
+      reportData.innerHTML = `<p>${errorText}r</p>`;
       throw new Error(`Network response was not ok: ${errorText}`);
     }
     //parse and return the response data
     const data = await response.json();
     return data;
-  } catch (err) {
-    console.error('API call error:', err);
+  } catch (error) {
+    console.error('API call error:', error);
+    reportData.innerHTML = `<p class="error>API call error: ${error}</p>`;
     return null;
   }
 }
@@ -82,7 +85,7 @@ async function fetchParamsForBarcode(reportname, barcode) {
 
     if (!Object.keys(parameters).length) {
       //display an error message if no parameters are found
-      paramList.innerHTML = `<p class="error">No parameters found for ${reportname}.</p>`;
+      reportData.innerHTML = `<p class="error">No parameters found for ${reportname}.</p>`;
       return;
     }
 
@@ -135,7 +138,7 @@ async function generateReportAndPreview() {
     const pdfBlob = await pdfResponse.blob();
     const pdfUrlObject = URL.createObjectURL(pdfBlob);
     //display the PDF preview
-    pdfOutput.innerHTML = `<embed src="${pdfUrlObject}#zoom=125" type="application/pdf" width="100%" height="800px" />`;
+    pdfOutput.innerHTML = `<embed src="${pdfUrlObject}#zoom=110" type="application/pdf" width="100%" height="600px" />`;
 
     //simulate a click event to open the PDF tab
     const event = {
@@ -146,9 +149,14 @@ async function generateReportAndPreview() {
     openTab(event, 'pdfOutput');
   } catch (error) {
     console.error('Error generating report:', error);
-    document.getElementById(
-      'reportData'
-    ).innerHTML = `<p class="error">An error occurred while generating the report.</p>`;
+    reportData.innerHTML = `<p class="error">An error occurred while generating the report.</p>
+    <p class="error">${error}</p>`;
+    const event = {
+      currentTarget: document.querySelector(
+        '.tablinks[onclick="openTab(event, \'jsonOutput\')"]'
+      ),
+    };
+    openTab(event, 'jsonOutput');
   }
 }
 
@@ -158,7 +166,7 @@ function startScanning() {
     .start(
       { facingMode: 'environment' }, // or { facingMode: "user" } for front camera
       {
-        fps: 30,
+        fps: 10,
         qrbox: { width: 350, height: 350 },
       },
       async (codeMessage) => {
@@ -202,7 +210,6 @@ stopBtn.addEventListener('click', async () => {
     stopBtn.style.display = 'none';
     scanHeader.style.display = 'block';
   } catch (err) {
-    // Log any errors to the console
     console.error(`Unable to stop scanning, error: ${err}`);
   }
 });
