@@ -1,62 +1,85 @@
-const sql = require("mssql");
-const dotenv = require("dotenv");
+const sql = require('mssql');
+const dotenv = require('dotenv');
 dotenv.config();
 
-// MSSQL config for first database
-const config1 = {
-  server: process.env.MSSQL_HOST,
-  authentication: {
-    type: "default",
-    options: {
-      userName: process.env.MSSQL_USER,
-      password: process.env.MSSQL_PASSWORD,
-    },
-  },
-  options: {
-    encrypt: false,
-    database: process.env.MSSQL_DATABASE,
-    trustServerCertificate: true,
-  },
-};
+// MSSQL configuration and connection manager class
+class DatabaseConnectionManager {
+  constructor() {
+    // Configuration for the first MSSQL database
+    this.config1 = {
+      server: process.env.MSSQL_HOST,
+      authentication: {
+        type: 'default',
+        options: {
+          userName: process.env.MSSQL_USER,
+          password: process.env.MSSQL_PASSWORD,
+        },
+      },
+      options: {
+        encrypt: false,
+        database: process.env.MSSQL_DATABASE,
+        trustServerCertificate: true,
+      },
+    };
 
-// MSSQL config for second database
-const config2 = {
-  server: process.env.MSSQL_HOST,
-  authentication: {
-    type: "default",
-    options: {
-      userName: process.env.MSSQL_USER,
-      password: process.env.MSSQL_PASSWORD,
-    },
-  },
-  options: {
-    encrypt: false,
-    database: process.env.MSSQL_DATABASE2,
-    trustServerCertificate: true,
-  },
-};
+    // MSSQL config for second database
+    this.config2 = {
+      server: process.env.MSSQL_HOST,
+      authentication: {
+        type: 'default',
+        options: {
+          userName: process.env.MSSQL_USER,
+          password: process.env.MSSQL_PASSWORD,
+        },
+      },
+      options: {
+        encrypt: false,
+        database: process.env.MSSQL_DATABASE2,
+        trustServerCertificate: true,
+      },
+    };
 
-// Create connection pools
-const pool1 = new sql.ConnectionPool(config1);
-const pool2 = new sql.ConnectionPool(config2);
+    // Create connection pools
+    this.pool1 = new sql.ConnectionPool(this.config1);
+    this.pool2 = new sql.ConnectionPool(this.config2);
+  }
 
-async function connectToDatabases() {
-  try {
-    await pool1.connect();
-    console.log("connected to mssql1 db");
-    await pool2.connect();
-    console.log("connected to mssql2 db");
-  } catch (err) {
-    console.log("connection to one of the dbs failed!", err);
+  // Initialize the connection pools for both databases
+  async initializePools() {
+    try {
+      await this.pool1.connect();
+      console.log('Connected to MSSQL1 database');
+      await this.pool2.connect();
+      console.log('Connected to MSSQL2 database');
+    } catch (err) {
+      console.error('Connection to one of the databases failed!', err);
+    }
+  }
+
+  // Ensure that the specified pool is connected
+  async ensureConnected(pool) {
+    if (!pool || !pool.connected) {
+      await pool.connect();
+    }
+    return pool;
+  }
+
+  // Get the connection pool based on the pool switch value
+  getPool(poolSwitch) {
+    if (poolSwitch === 'pool1') {
+      return this.pool1;
+    } else if (poolSwitch === 'pool2') {
+      return this.pool2;
+    } else {
+      throw new Error('Invalid pool switch provided');
+    }
   }
 }
 
-async function ensureConnected(pool) {
-  if (!pool.connected) {
-    await pool.connect();
-  }
-}
+// Create an instance of the DatabaseConnectionManager
+const mssqlConfig = new DatabaseConnectionManager();
 
-connectToDatabases();
+// Initialize pools on startup
+mssqlConfig.initializePools();
 
-module.exports = { pool1, pool2, sql, ensureConnected };
+module.exports = mssqlConfig;
