@@ -1,24 +1,46 @@
 const mysql = require("mysql2");
-
-//dotenv config
 const dotenv = require("dotenv");
 dotenv.config();
 
-//mysql config
-const db = mysql.createConnection({
-  host: process.env.MYSQL_HOST,
-  database: process.env.MYSQL_DATABASE,
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-});
-
-//connnect to mysql db
-db.connect((err) => {
-  if (err) {
-    console.error("connection to mysql db failed!: " + err.stack);
-    return;
+class DatabaseConnectionManager {
+  constructor() {
+    this.config = {
+      host: process.env.MYSQL_HOST,
+      database: process.env.MYSQL_DATABASE,
+      user: process.env.MYSQL_USER,
+      password: process.env.MYSQL_PASSWORD,
+    };
+    this.connection = null;
   }
-  console.log("connected to mysql db");
-});
 
-module.exports = db;
+  // Initialize the database connection
+  initializeConnection() {
+    this.connection = mysql.createConnection(this.config);
+
+    this.connection.connect((err) => {
+      if (err) {
+        console.error("Connection to MySQL DB failed!: " + err.stack);
+        return;
+      }
+      console.log("Connected to MySQL DB");
+    });
+  }
+
+  // Ensure the connection is established
+  ensureConnection() {
+    if (!this.connection) {
+      this.initializeConnection();
+    }
+  }
+
+  // Get the connection
+  getConnection() {
+    this.ensureConnection();
+    return this.connection;
+  }
+}
+
+const mysqlConfig = new DatabaseConnectionManager();
+mysqlConfig.initializeConnection();
+
+module.exports = mysqlConfig;
