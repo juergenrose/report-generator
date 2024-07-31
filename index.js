@@ -168,8 +168,8 @@ app.get('/report/:reportname', async (req, res) => {
 
 // Route to handle suggestions for a report
 app.get('/report/:reportname/suggestions', async (req, res) => {
+  const { reportname } = req.params;
   try {
-    const { reportname } = req.params;
     const queryParams = req.query;
     const filePath = path.join(__dirname, 'routes', `${reportname}.js`);
     await fsPromise.access(filePath);

@@ -45,22 +45,8 @@ li {
   color: #111;
 }
 
-.apiLink a {
-  text-decoration: none;
-  float: right;
-  padding: 12px 24px;
-  background-color: #222;
-  color: #fafafa;
-  border: 0;
-  border-radius: 24px;
-}
-
-.apiLink a:hover {
-  background-color: #333;
-}
 
 @media (max-width: 768px) {
-  .apiLink a,
   .headerName {
     float: none;
     display: block;
