@@ -43,124 +43,42 @@ app.get("/report", async (req, res) => {
   }
 });
 
-// Route to handle report previews and downloads
+// Define a route for generating reports based on the report name provided in the URL
 app.get("/report/:reportname", async (req, res) => {
   const { reportname } = req.params;
-  const { barcode } = req.query; // Capture barcode from query parameters if provided
+  const { barcode, download } = req.query;
 
   try {
     const queryParams = req.query;
-    const filePath = path.join(__dirname, "routes", `${reportname}.js`);
+    const reportFilePath = path.join(__dirname, "routes", `${reportname}.js`);
 
-    // Check if the report file exists
-    try {
-      await fsPromise.access(filePath);
-    } catch (fileErr) {
-      console.error(`Report file for ${reportname} not found:`, fileErr);
-      return res
-        .status(404)
-        .json({ error: `Report file for ${reportname} not found.` });
-    }
+    // Check if the report file exists, throw an error if not found
+    await fsPromise.access(reportFilePath).catch(() => {
+      throw new Error(`Report file for ${reportname} not found.`);
+    });
+    // Import functions from the report file
+    const { runReport, getQueryParams, checkBarcode } = require(reportFilePath);
 
-    const { runReport, getQueryParams, checkBarcode } = require(filePath);
-
-    // If barcode is provided, check its existence and handle report generation
+    // If barcode is provided, check its existence and update query parameters
     if (barcode) {
-      if (typeof checkBarcode === "function") {
-        try {
-          const barcodeExists = await checkBarcode(barcode);
-          if (barcodeExists) {
-            queryParams.BIDNR = barcode; // Add barcode to query parameters
-          } else {
-            console.log(`Barcode ${barcode} not found in database.`);
-            return res.json({ exists: false });
-          }
-        } catch (err) {
-          console.error(`Error checking barcode ${barcode}:`, err);
-          return res.status(500).json({
-            error: "Internal server error during barcode check",
-            details: err.message,
-          });
-        }
-      } else {
-        console.error(`checkBarcode function not found in ${reportname}.js`);
-        return res.status(500).json({
-          error: `checkBarcode function not found in ${reportname}.js`,
-        });
-      }
+      await handleBarcodeCheck(checkBarcode, barcode, queryParams);
     }
 
+    // If no query parameters are provided, return the required parameters for the report
     if (Object.keys(queryParams).length === 0) {
-      if (typeof getQueryParams !== "function") {
-        console.error(`getQueryParams function not found in ${reportname}.js`);
-        return res.status(500).json({
-          error: `getQueryParams function not found in ${reportname}.js`,
-        });
-      }
-      const parameters = await getQueryParams();
-
-      if (!parameters) {
-        return res
-          .status(404)
-          .json({ error: "No parameters found for this report." });
-      }
-      return res.json({ reportname, parameters });
+      await handleReportParameters(getQueryParams, reportname, res);
     } else {
-      const { value: parsedQueryParams, format } = parseQuery(queryParams);
-
-      if (typeof runReport !== "function") {
-        console.error(`runReport function not found in ${reportname}.js`);
-        return res
-          .status(500)
-          .json({ error: `runReport function not found in ${reportname}.js` });
-      }
-      try {
-        const reportData = await runReport(parsedQueryParams);
-
-        const isDownload = req.query.download === "true";
-
-        if (format) {
-          switch (format) {
-            case "json":
-              await new JsonReportHandler().handleJsonReport(
-                reportname,
-                reportData,
-                res,
-                queryParams,
-                isDownload
-              );
-              break;
-            case "csv":
-              const csvData = await new CsvReportHandler().handleCsvReport(
-                reportname,
-                reportData
-              );
-              res.status(200).send(csvData);
-              break;
-            case "pdf":
-              const pdfContent =
-                await new PdfReportHandler().generatePdfContent(
-                  reportname,
-                  reportData,
-                  queryParams,
-                  isDownload
-                );
-              res.status(200).contentType("application/pdf").send(pdfContent);
-              break;
-            default:
-              res.status(400).send("Invalid format specified.");
-          }
-        } else {
-          res.json(reportData);
-        }
-      } catch (err) {
-        console.error(`Error generating report for ${reportname}:`, err);
-        res.status(500).json({
-          error: `Error generating report for ${reportname}: ${err.message}`,
-        });
-      }
+      // Generate and send the report based on the provided query parameters
+      await generateAndSendReport(
+        runReport,
+        reportname,
+        queryParams,
+        res,
+        download
+      );
     }
   } catch (err) {
+    // Handle errors during the process and send an error response
     console.error(`Error handling report ${reportname}:`, err);
     res
       .status(500)
@@ -190,6 +108,115 @@ app.get("/report/:reportname/suggestions", async (req, res) => {
       .send(`Error handling suggestions for ${reportname}: ${err.message}`);
   }
 });
+
+// Handle checking if the provided barcode exists in the database
+const handleBarcodeCheck = async (checkBarcode, barcode, queryParams) => {
+  // Ensure the checkBarcode function is defined
+  if (typeof checkBarcode !== "function") {
+    throw new Error(`checkBarcode function not found.`);
+  }
+
+  // Check if the barcode exists in the database
+  const barcodeExists = await checkBarcode(barcode);
+  if (!barcodeExists) {
+    throw new Error(`Barcode ${barcode} not found in database.`);
+  }
+  // Add the barcode to query parameters if it exists
+  queryParams.BIDNR = barcode;
+};
+
+// Handle retrieval of report parameters
+const handleReportParameters = async (getQueryParams, reportname, res) => {
+  // Ensure the getQueryParams function is defined
+  if (typeof getQueryParams !== "function") {
+    throw new Error(`getQueryParams function not found.`);
+  }
+
+  // Retrieve the required parameters for the report
+  const parameters = await getQueryParams();
+  if (!parameters) {
+    // Send an error response if no parameters are found
+    res.status(404).json({ error: "No parameters found for this report." });
+  } else {
+    // Send the parameters as a JSON response
+    res.json({ reportname, parameters });
+  }
+};
+
+//Generate the report and send it in the requested format
+const generateAndSendReport = async (
+  runReport,
+  reportname,
+  queryParams,
+  res,
+  isDownload
+) => {
+  // Ensure the runReport function is defined
+  if (typeof runReport !== "function") {
+    throw new Error(`runReport function not found.`);
+  }
+
+  // Parse the query parameters and determine the format
+  const { value: parsedQueryParams, format } = parseQuery(queryParams);
+  const reportData = await runReport(parsedQueryParams);
+
+  // Handle the report based on the requested format
+  if (format) {
+    await handleFormattedReport(
+      reportname,
+      reportData,
+      res,
+      format,
+      queryParams,
+      isDownload
+    );
+  } else {
+    // Send the report data as a JSON response if no format is specified
+    res.json(reportData);
+  }
+};
+
+// Handle sending the report in the requested format
+const handleFormattedReport = async (
+  reportname,
+  reportData,
+  res,
+  format,
+  queryParams,
+  isDownload
+) => {
+  // Handle different formats and send the report accordingly
+  switch (format) {
+    case "json":
+      await new JsonReportHandler().handleJsonReport(
+        reportname,
+        reportData,
+        res,
+        queryParams,
+        isDownload
+      );
+      break;
+    case "csv":
+      const csvData = await new CsvReportHandler().handleCsvReport(
+        reportname,
+        reportData
+      );
+      res.status(200).send(csvData);
+      break;
+    case "pdf":
+      const pdfContent = await new PdfReportHandler().generatePdfContent(
+        reportname,
+        reportData,
+        queryParams,
+        isDownload
+      );
+      res.status(200).contentType("application/pdf").send(pdfContent);
+      break;
+    default:
+      // Send an error response if the format is invalid
+      res.status(400).send("Invalid format specified.");
+  }
+};
 
 // Setup Swagger and start the server
 const routesDir = path.join(__dirname, "routes");
