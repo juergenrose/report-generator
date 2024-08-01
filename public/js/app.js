@@ -24,11 +24,12 @@ async function fetchReports() {
 
 //helper function to convert camelCase to Title Case
 function splitCamelCase(input) {
-  const spacedString = input.replace(/([A-Z])/g, " $1");
-  const titleCaseString = spacedString.replace(/\w\S*/g, function (txt) {
-    return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
-  });
-  return titleCaseString.trim();
+  return input
+    .replace(/([A-Z])/g, " $1")
+    .replace(/\w\S*/g, function (txt) {
+      return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+    })
+    .trim();
 }
 
 //function to fetch parameters for the selected report
@@ -152,12 +153,6 @@ function getDefaultValue(param, barcode, inputType, today, startDate) {
     return "";
   }
 }
-
-// Helper function to split camel case text into words
-function splitCamelCase(text) {
-  return text.replace(/([a-z])([A-Z])/g, "$1 $2");
-}
-
 document.getElementById("barcodeInput").addEventListener("input", (event) => {
   const barcode = event.target.value;
   const reportname = document.getElementById("reportList").value;
