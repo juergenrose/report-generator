@@ -45,7 +45,6 @@ li {
   color: #111;
 }
 
-
 @media (max-width: 768px) {
   .headerName {
     float: none;
@@ -92,7 +91,7 @@ label {
   margin: 1em;
 }
 
-input[type='text'] {
+input[type="text"] {
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -127,7 +126,7 @@ select:hover {
 /******************* 
 * date input styles 
 ********************/
-input[type='date'] {
+input[type="date"] {
   padding: 8px;
   border: 1px solid #ccc;
   border-radius: 4px;
@@ -139,7 +138,7 @@ input[type='date'] {
   box-sizing: border-box;
 }
 
-input[type='date']:hover {
+input[type="date"]:hover {
   background-color: #d6d6d6;
   cursor: text;
 }
@@ -169,7 +168,6 @@ input[type='date']:hover {
 #barcodeInputDiv {
   display: flex;
   align-items: center;
-  margin-top: 1em;
 }
 #barcodeInputDiv input {
   flex-grow: 1;
@@ -178,7 +176,7 @@ input[type='date']:hover {
   border-radius: 4px 0 0 4px;
   box-sizing: border-box;
 }
-#barcodeInputDiv button {
+#scanBtn {
   background-color: #222;
   color: white;
   border: none;
@@ -192,9 +190,13 @@ input[type='date']:hover {
   flex: 0 0 auto;
   height: 100%;
 }
-#barcodeInputDiv img {
+.barcodeImg {
   width: 25px;
   height: auto;
+}
+.input-button-container {
+  display: flex;
+  align-items: center;
 }
 
 #reportData {
