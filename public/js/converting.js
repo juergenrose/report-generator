@@ -47,7 +47,6 @@ function generateCsvContent(data) {
   return csvArray.join("\r\n"); // join all rows with newline characters
 }
 
-
 //function to convert JSON data to CSV and display it
 function convertJsonToCsv(jsonData) {
   if (!jsonData.data || !Array.isArray(jsonData.data)) {
