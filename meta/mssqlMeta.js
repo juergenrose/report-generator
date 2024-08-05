@@ -145,8 +145,10 @@ class MssqlMeta {
     predefinedQueries.forEach(({ params: queryParams }) => {
       queryParams?.forEach((param) => {
         const columnName = paramColumnMapping[param];
+        const type = columnTypes[columnName] || "Undefined";
         params[param] = {
-          type: columnTypes[columnName] || "Undefined",
+          type:
+            type === "Undefined" && columnName === "barcode" ? "barcode" : type,
           required: true,
         };
       });
