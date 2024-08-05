@@ -15,33 +15,39 @@ const predefinedQueries = [
   },
 ];
 
-// Mapping of parameters to their respective column names in the database
+// Dynamic mapping of parameters to their respective column names in the database
 const paramColumnMapping = {
-  BIDNR: "BIDNR",
+  BIDNR: "barcode",
 };
 
 const tableName = predefinedQueries[0].tableName;
 
 // Wrapper function to get query parameters by invoking the getQueryParams function
 async function getQueryParamsWrapper() {
-  return await mssqlMeta.getQueryParams(predefinedQueries, paramColumnMapping);
+  const params = await mssqlMeta.getQueryParams(
+    predefinedQueries,
+    paramColumnMapping
+  );
+  return params;
 }
 
 // Wrapper function to get suggestions based on the input parameters
 async function getSuggestionsWrapper(params) {
-  return await mssqlMeta.getSuggestions(predefinedQueries, params);
+  const suggestions = await mssqlMeta.getSuggestions(predefinedQueries, params);
+  return suggestions;
 }
 
 // Wrapper function to run the report based on the provided parameters, page number, and page size
 async function runReportWrapper(params, pageNumber = 1, pageSize = 10) {
-  return await mssqlMeta.runReport(
+  const reportData = await mssqlMeta.runReport(
     predefinedQueries,
     paramColumnMapping,
     params,
     tableName,
-    pageNumber, 
+    pageNumber,
     pageSize
   );
+  return reportData;
 }
 
 module.exports = {
