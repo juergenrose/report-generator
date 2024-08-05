@@ -36,18 +36,14 @@ function splitCamelCase(input) {
 async function fetchParams(reportname = null, barcode = null) {
   const reportDropdown = document.getElementById("reportList");
   const paramList = document.getElementById("paramList");
-  const barcodeInputDiv = document.getElementById("barcodeInputDiv");
 
   // Use the provided report name or get it from the dropdown
   reportname = reportname || reportDropdown.value;
 
   if (!reportname || reportname === "-- Select a report --") {
-    displayError("Please select a valid report.", paramList, barcodeInputDiv);
+    displayError("Please select a valid report.", paramList);
     return;
   }
-
-  // Show the barcode input div
-  barcodeInputDiv.style.display = "flex";
 
   try {
     const parameters = await fetchReportParameters(reportname);
@@ -107,31 +103,40 @@ function generateParamInputs(
   today,
   startDate
 ) {
+  // Convert the parameters object to an array of entries and map over them to generate the HTML for each parameter input
   return Object.entries(parameters)
     .map(([param, { type }]) => {
+      // Determine the input type based on the parameter type
       const inputType = getInputType(type);
+
+      // Get the default value for the input field based on the parameter name, barcode, type, today, and startDate
       const defaultValue = getDefaultValue(
         param,
         barcode,
-        inputType,
+        type,
         today,
         startDate
       );
       const label = splitCamelCase(param);
 
+      // Conditionally render the scan button if the parameter type is "barcode"
+      const scanButton =
+        type.toLowerCase() === "barcode"
+          ? `<button id="scanBtn" class="scanBtn" type="button"><img class="barcodeImg" src="/img/barcode.png" alt="Barcode Icon" /></button>`
+          : "";
+
+      // Return the HTML string for the parameter input field and scan button (if applicable)
       return `
-        <div class="paramInput">
-          <label for="${param}">${label} (${type})</label><br>
-          <input 
-            type="${inputType}" 
-            id="${param}" 
-            name="${param}" 
-            ${defaultValue} 
-            oninput="fetchSuggestions('${reportname}', '${param}', this.value)"
-          >
-          <div id="${param}-results" class="results"></div>
-        </div>
-      `;
+          <div class="paramInput">
+            <label for="${param}">${label} (${type})</label>
+            <div class="input-button-container">
+              <input type="${inputType}" id="${param}" name="${param}" ${defaultValue}
+                oninput="fetchSuggestions('${reportname}', '${param}', this.value)">
+              ${scanButton}
+            </div>
+            <div id="${param}-results" class="results"></div>
+          </div>
+        `;
     })
     .join("");
 }
@@ -144,25 +149,16 @@ function getInputType(type) {
 }
 
 // Helper function to get default value for input
-function getDefaultValue(param, barcode, inputType, today, startDate) {
-  if (param === "BIDNR" && barcode) {
+function getDefaultValue(param, barcode, type, today, startDate) {
+  if (type.toLowerCase() === "barcode" && barcode) {
     return `value="${barcode}"`;
-  } else if (inputType === "date") {
+  } else if (getInputType(type) === "date") {
     return `value="${param === "EndDate" ? today : startDate}"`;
   } else {
     return "";
   }
 }
-document.getElementById("barcodeInput").addEventListener("input", (event) => {
-  const barcode = event.target.value;
-  const reportname = document.getElementById("reportList").value;
 
-  if (barcode) {
-    fetchParamsForBarcode(reportname, barcode);
-  }
-});
-
-//modified fetchParamsForBarcode function to use fetchParams
 async function fetchParamsForBarcode(reportname, barcode) {
   await fetchParams(reportname, barcode);
 }
@@ -215,7 +211,7 @@ async function showJsonOutput(event) {
     }
     const pdfBlob = await pdfResponse.blob();
     const pdfUrlObject = URL.createObjectURL(pdfBlob);
-    pdfOutput.innerHTML = `<embed src="${pdfUrlObject}#zoom=100" type="application/pdf" width="100%" height="800px" />`;
+    pdfOutput.innerHTML = `<embed src="${pdfUrlObject}#zoom=110" type="application/pdf" width="100%" height="600px" />`;
 
     //set PDF as the default active tab
     const event = {
