@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="/css/styles.css" />
+    <title>Report Viewer</title>
+  </head>
+  <body>
+    <div class="content">
+      <header>
+        <nav>
+          <ul>
+            <li class="headerName"><a href="/">Report Generator</a></li>
+          </ul>
+        </nav>
+      </header>
+      <main class="mainContainer">
+        <section class="formPart">
+          <h2 class="reportHeader">Report:</h2>
+          <!-- You can add any additional content or message here -->
+          <h2 class="paramH2">Parameters for report</h2>
+          <form id="reportForm" onsubmit="showJsonOutput(event);">
+            <div id="paramList">
+              <!-- parameter inputs will be populated dynamically -->
+            </div>
+            <br />
+            <button class="generateBtn" type="submit">Generate</button>
+          </form>
+        </section>
+        <section class="rightContainer">
+          <div class="tabs">
+            <a class="tablinks" onclick="openTab(event, 'pdfOutput')">PDF</a>
+            <a class="tablinks" onclick="openTab(event, 'csvOutput')">Table</a>
+            <a class="tablinks" onclick="openTab(event, 'jsonOutput')">JSON</a>
+            <a
+              class="tablinks"
+              onclick="openTab(event, 'scannerOutput')"
+              style="display: none"
+              >Scanner</a
+            >
+            <form id="downloadForm" onsubmit="downloadReport(event)">
+              <div class="downloadSelect">
+                <div class="selectWrapper">
+                  <select name="format" id="format">
+                    <option value="">-- Select format --</option>
+                    <option value="json">JSON</option>
+                    <option value="csv">CSV</option>
+                    <option value="pdf">PDF</option>
+                  </select>
+                </div>
+                <button class="downloadBtn" type="submit">Download</button>
+              </div>
+            </form>
+          </div>
+          <div id="jsonOutput" class="tabcontent">
+            <div id="reportData">
+              <!-- JSON data will be displayed here -->
+            </div>
+          </div>
+          <div id="csvOutput" class="tabcontent">
+            <div id="csvData">
+              <!-- CSV data as table will be displayed here -->
+            </div>
+          </div>
+          <div id="pdfOutput" class="tabcontent">
+            <div id="pdfData">
+              <!-- PDF preview will be displayed here -->
+              <embed id="pdfPreview" src="" type="application/pdf" />
+            </div>
+          </div>
+          <div id="scannerOutput" class="tabcontent">
+            <h2 id="scanHeader">Scan a barcode</h2>
+            <div id="reader"></div>
+            <div id="scannerBtns">
+              <button id="startBtn" class="start" style="display: none">
+                Start Scanning
+              </button>
+              <button id="stopBtn" class="stop">Stop Scanning</button>
+            </div>
+          </div>
+        </section>
+      </main>
+      <script src="/node_modules/html5-qrcode/html5-qrcode.min.js"></script>
+      <script src="/js/scanner.js"></script>
+      <script src="/js/suggestions.js"></script>
+      <script src="/js/converting.js"></script>
+      <script src="/js/report.js"></script>
+    </div>
+  </body>
+</html>
