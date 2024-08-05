@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     try {
       //make a fetch request to check the barcode in the selected report
-      const response = await fetch(`/report/${reportname}?BIDNR=${barcode}`);
+      const response = await fetch(`/report/${reportname}?barcode=${barcode}`);
       if (!response.ok) {
         const errorText = await response.text();
         reportData.innerHTML = `<p>${errorText}r</p>`;
