@@ -1,7 +1,7 @@
 //fetches the list of available reports and populates the dropdown menu
 async function fetchReports() {
   try {
-    const response = await fetch("/report");
+    const response = await fetch("/api/report");
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
@@ -27,7 +27,7 @@ function splitCamelCase(input) {
   return input
     .replace(/([A-Z])/g, " $1")
     .replace(/\w\S*/g, function (txt) {
-      return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+      return txt.charAt(0).toUpperCase() + txt.substring(1).toLowerCase();
     })
     .trim();
 }
@@ -79,7 +79,7 @@ function displayError(message, paramList, barcodeInputDiv = null) {
 
 // Helper function to fetch report parameters
 async function fetchReportParameters(reportname) {
-  const response = await fetch(`/report/${reportname}`);
+  const response = await fetch(`/api/report/${reportname}`);
   if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
   const { parameters } = await response.json();
   return parameters;
@@ -185,7 +185,9 @@ async function showJsonOutput(event) {
   try {
     //create a query string from the form data
     const params = new URLSearchParams(new FormData(form)).toString();
-    const response = await fetch(`/report/${reportname}?${params}`);
+    const response = await fetch(
+      `/api/report/${reportname}/generate/?${params}`
+    );
     if (!response.ok) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
@@ -204,14 +206,14 @@ async function showJsonOutput(event) {
     csvOutput.innerHTML = tableHTML;
 
     //set up PDF preview but don't download it yet
-    const pdfUrl = `/report/${reportname}?${params}&format=pdf`;
+    const pdfUrl = `/api/report/${reportname}/generate?${params}&format=pdf`;
     const pdfResponse = await fetch(pdfUrl, { method: "GET" });
     if (!pdfResponse.ok) {
       throw new Error(`Failed to generate PDF: ${await pdfResponse.text()}`);
     }
     const pdfBlob = await pdfResponse.blob();
     const pdfUrlObject = URL.createObjectURL(pdfBlob);
-    pdfOutput.innerHTML = `<embed src="${pdfUrlObject}#zoom=110" type="application/pdf" width="100%" height="600px" />`;
+    pdfOutput.innerHTML = `<embed src="${pdfUrlObject}#zoom=110" type="application/pdf" width="100%" height="800px" />`;
 
     //set PDF as the default active tab
     const event = {
@@ -245,7 +247,7 @@ async function downloadReport(event) {
   const form = document.getElementById("reportForm");
   const params = new URLSearchParams(new FormData(form)).toString();
   //construct the URL with query parameters
-  const url = `/report/${reportname}?${params}&format=${format}&download=true`;
+  const url = `/api/report/${reportname}/generate?${params}&format=${format}&download=true`;
 
   try {
     const response = await fetch(url);
