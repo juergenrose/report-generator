@@ -1,6 +1,4 @@
 const express = require("express");
-const app = express();
-const port = 3000;
 const cors = require("cors");
 const fsPromise = require("fs").promises;
 const path = require("path");
@@ -11,219 +9,207 @@ const {
   PdfReportHandler,
 } = require("./convert-report");
 
-// Middleware for static files and view engine
-app.use(cors());
-app.use(express.static("public"));
-app.use("/node_modules", express.static(path.join(__dirname, "node_modules")));
-app.set("views", path.join(__dirname, "views"));
-app.set("view engine", "html");
-
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "views", "index.html"));
-});
-
-// Helper function to parse and format query parameters
-const parseQuery = (queryParams) => {
-  const format = queryParams.format || null;
-  const value = { ...queryParams };
-  delete value.format;
-  return { value, format };
-};
-
-app.get("/report", async (req, res) => {
-  try {
-    const reportsDirectory = path.join(__dirname, "routes");
-    const files = await fsPromise.readdir(reportsDirectory);
-    const reportFiles = files.filter((file) => file.endsWith(".js"));
-    const reportNames = reportFiles.map((file) => path.basename(file, ".js"));
-    res.json({ reports: reportNames });
-  } catch (err) {
-    console.error("Error listing reports:", err);
-    res.status(500).send("Error listing reports");
+class ReportServer {
+  constructor(port) {
+    this.app = express();
+    this.port = port;
+    this.setupMiddleware();
+    this.setupRoutes();
+    this.setupSwagger();
   }
-});
 
-// Define a route for generating reports based on the report name provided in the URL
-app.get("/report/:reportname", async (req, res) => {
-  const { reportname } = req.params;
-  const { barcode, download } = req.query;
+  // Set up middleware for the Express application
+  setupMiddleware() {
+    this.app.use(cors());
+    this.app.use(express.static("public"));
+    // Serve static files from the "node_modules" directory
+    this.app.use(
+      "/node_modules",
+      express.static(path.join(__dirname, "node_modules"))
+    );
+    this.app.set("views", path.join(__dirname, "views"));
+    this.app.set("view engine", "html");
+  }
 
-  try {
+  // Set up routes for the Express application
+  setupRoutes() {
+    // Route for serving the index.html file
+    this.app.get("/", this.serveStartPage);
+    // Route for serving the report.html file
+    this.app.get("/report/:reportname", this.serveReportPage);
+    // API route for listing available reports
+    this.app.get("/api/report", this.listReports.bind(this));
+    // API route for getting parameters for a specific report
+    this.app.get(
+      "/api/report/:reportname",
+      this.getReportParameters.bind(this)
+    );
+    // API route for generating a specific report
+    this.app.get(
+      "/api/report/:reportname/generate",
+      this.generateReport.bind(this)
+    );
+    // API route for getting suggestions for a specific report
+    this.app.get(
+      "/api/report/:reportname/suggestions",
+      this.getSuggestions.bind(this)
+    );
+  }
+
+  serveStartPage(req, res) {
+    res.sendFile(path.join(__dirname, "views", "index.html"));
+  }
+
+  serveReportPage(req, res) {
+    res.sendFile(path.join(__dirname, "views", "report.html"));
+  }
+
+  // List all available reports by reading the "routes" directory
+  async listReports(req, res) {
+    try {
+      const reportsDirectory = path.join(__dirname, "routes");
+      const files = await fsPromise.readdir(reportsDirectory);
+      const reportFiles = files.filter((file) => file.endsWith(".js"));
+      const reportNames = reportFiles.map((file) => path.basename(file, ".js"));
+      res.json({ reports: reportNames });
+    } catch (err) {
+      console.error("Error listing reports:", err);
+      res.status(500).send("Error listing reports");
+    }
+  }
+
+  // Get parameters required for a specific report by loading the report module
+  async getReportParameters(req, res) {
+    const { reportname } = req.params;
+    const reportFilePath = path.join(__dirname, "routes", `${reportname}.js`);
+
+    try {
+      // Check if the report file exists
+      await fsPromise.access(reportFilePath);
+      // Require the report module
+      const { getQueryParams } = require(reportFilePath);
+      // Get query parameters for the report
+      const parameters = await getQueryParams();
+      res.json({ reportname, parameters });
+    } catch (err) {
+      console.error(`Error handling report ${reportname}:`, err);
+      res.status(404).send("Report not found");
+    }
+  }
+
+  // Generate a report based on provided parameters and format
+  async generateReport(req, res) {
+    const { reportname } = req.params;
+    const { barcode, download, format } = req.query;
     const queryParams = req.query;
     const reportFilePath = path.join(__dirname, "routes", `${reportname}.js`);
 
-    // Check if the report file exists, throw an error if not found
-    await fsPromise.access(reportFilePath).catch(() => {
-      throw new Error(`Report file for ${reportname} not found.`);
-    });
-    // Import functions from the report file
-    const { runReport, getQueryParams, checkBarcode } = require(reportFilePath);
+    try {
+      // Check if the report file exists
+      await fsPromise.access(reportFilePath);
+      // Require the report module
+      const { runReport, checkBarcode } = require(reportFilePath);
 
-    // If barcode is provided, check its existence and update query parameters
-    if (barcode) {
-      await handleBarcodeCheck(checkBarcode, barcode, queryParams);
+      // Check if the barcode exists, if provided
+      if (barcode) {
+        const barcodeExists = await checkBarcode(barcode);
+        if (!barcodeExists) {
+          throw new Error(`Barcode ${barcode} not found in database.`);
+        }
+      }
+
+      // Run the report with the provided query parameters
+      const reportData = await runReport(queryParams);
+      if (format) {
+        // Handle different formats: JSON, CSV, PDF
+        switch (format) {
+          case "json":
+            await new JsonReportHandler().handleJsonReport(
+              reportname,
+              reportData,
+              res,
+              queryParams,
+              download
+            );
+            break;
+          case "csv":
+            const csvData = await new CsvReportHandler().handleCsvReport(
+              reportname,
+              reportData
+            );
+            res.status(200).send(csvData);
+            break;
+          case "pdf":
+            const pdfContent = await new PdfReportHandler().generatePdfContent(
+              reportname,
+              reportData,
+              queryParams,
+              download
+            );
+            res.status(200).contentType("application/pdf").send(pdfContent);
+            break;
+          default:
+            res.status(400).send("Invalid format specified.");
+        }
+      } else {
+        // If no format specified, return the report data as JSON
+        res.json(reportData);
+      }
+    } catch (err) {
+      console.error(`Error handling report ${reportname}:`, err);
+      res
+        .status(500)
+        .json({ error: `Error handling report ${reportname}: ${err.message}` });
     }
+  }
 
-    // If no query parameters are provided, return the required parameters for the report
-    if (Object.keys(queryParams).length === 0) {
-      await handleReportParameters(getQueryParams, reportname, res);
-    } else {
-      // Generate and send the report based on the provided query parameters
-      await generateAndSendReport(
-        runReport,
-        reportname,
-        queryParams,
-        res,
-        download
-      );
+  // Get suggestions for a specific report based on query parameters
+  async getSuggestions(req, res) {
+    const { reportname } = req.params;
+    try {
+      const queryParams = req.query;
+      const filePath = path.join(__dirname, "routes", `${reportname}.js`);
+      await fsPromise.access(filePath);
+      const { getSuggestions } = require(filePath);
+
+      // Check if the getSuggestions function exists
+      if (typeof getSuggestions !== "function") {
+        throw new Error(
+          `getSuggestions function not found in ${reportname}.js`
+        );
+      }
+
+      // Get suggestions for the report
+      const suggestions = await getSuggestions(queryParams);
+      res.json({ suggestions });
+    } catch (err) {
+      console.error(`Error handling suggestions for ${reportname}:`, err);
+      res
+        .status(500)
+        .send(`Error handling suggestions for ${reportname}: ${err.message}`);
     }
-  } catch (err) {
-    // Handle errors during the process and send an error response
-    console.error(`Error handling report ${reportname}:`, err);
-    res
-      .status(500)
-      .json({ error: `Error handling report ${reportname}: ${err.message}` });
-  }
-});
-
-// Route to handle suggestions for a report
-app.get("/report/:reportname/suggestions", async (req, res) => {
-  const { reportname } = req.params;
-  try {
-    const queryParams = req.query;
-    const filePath = path.join(__dirname, "routes", `${reportname}.js`);
-    await fsPromise.access(filePath);
-    const { getSuggestions } = require(filePath);
-
-    if (typeof getSuggestions !== "function") {
-      throw new Error(`getSuggestions function not found in ${reportname}.js`);
-    }
-    const suggestions = await getSuggestions(queryParams);
-
-    res.json({ suggestions });
-  } catch (err) {
-    console.error(`Error handling suggestions for ${reportname}:`, err);
-    res
-      .status(500)
-      .send(`Error handling suggestions for ${reportname}: ${err.message}`);
-  }
-});
-
-// Handle checking if the provided barcode exists in the database
-const handleBarcodeCheck = async (checkBarcode, barcode, queryParams) => {
-  // Ensure the checkBarcode function is defined
-  if (typeof checkBarcode !== "function") {
-    throw new Error(`checkBarcode function not found.`);
   }
 
-  // Check if the barcode exists in the database
-  const barcodeExists = await checkBarcode(barcode);
-  if (!barcodeExists) {
-    throw new Error(`Barcode ${barcode} not found in database.`);
-  }
-  // Add the barcode to query parameters if it exists
-  queryParams.BIDNR = barcode;
-};
-
-// Handle retrieval of report parameters
-const handleReportParameters = async (getQueryParams, reportname, res) => {
-  // Ensure the getQueryParams function is defined
-  if (typeof getQueryParams !== "function") {
-    throw new Error(`getQueryParams function not found.`);
-  }
-
-  // Retrieve the required parameters for the report
-  const parameters = await getQueryParams();
-  if (!parameters) {
-    // Send an error response if no parameters are found
-    res.status(404).json({ error: "No parameters found for this report." });
-  } else {
-    // Send the parameters as a JSON response
-    res.json({ reportname, parameters });
-  }
-};
-
-//Generate the report and send it in the requested format
-const generateAndSendReport = async (
-  runReport,
-  reportname,
-  queryParams,
-  res,
-  isDownload
-) => {
-  // Ensure the runReport function is defined
-  if (typeof runReport !== "function") {
-    throw new Error(`runReport function not found.`);
-  }
-
-  // Parse the query parameters and determine the format
-  const { value: parsedQueryParams, format } = parseQuery(queryParams);
-  const reportData = await runReport(parsedQueryParams);
-
-  // Handle the report based on the requested format
-  if (format) {
-    await handleFormattedReport(
-      reportname,
-      reportData,
-      res,
-      format,
-      queryParams,
-      isDownload
+  // Set up Swagger for API documentation
+  setupSwagger() {
+    const routesDir = path.join(__dirname, "routes");
+    const outputPath = path.join(__dirname, "swagger.yaml");
+    const swaggerGenerator = new SwaggerGenerator(
+      this.app,
+      routesDir,
+      outputPath
     );
-  } else {
-    // Send the report data as a JSON response if no format is specified
-    res.json(reportData);
+    swaggerGenerator.setupSwagger();
   }
-};
 
-// Handle sending the report in the requested format
-const handleFormattedReport = async (
-  reportname,
-  reportData,
-  res,
-  format,
-  queryParams,
-  isDownload
-) => {
-  // Handle different formats and send the report accordingly
-  switch (format) {
-    case "json":
-      await new JsonReportHandler().handleJsonReport(
-        reportname,
-        reportData,
-        res,
-        queryParams,
-        isDownload
-      );
-      break;
-    case "csv":
-      const csvData = await new CsvReportHandler().handleCsvReport(
-        reportname,
-        reportData
-      );
-      res.status(200).send(csvData);
-      break;
-    case "pdf":
-      const pdfContent = await new PdfReportHandler().generatePdfContent(
-        reportname,
-        reportData,
-        queryParams,
-        isDownload
-      );
-      res.status(200).contentType("application/pdf").send(pdfContent);
-      break;
-    default:
-      // Send an error response if the format is invalid
-      res.status(400).send("Invalid format specified.");
+  // Start the server
+  start() {
+    this.app.listen(this.port, () => {
+      console.log(`Server is running at http://localhost:${this.port}`);
+    });
   }
-};
+}
 
-// Setup Swagger and start the server
-const routesDir = path.join(__dirname, "routes");
-const outputPath = path.join(__dirname, "swagger.yaml");
-const swaggerGenerator = new SwaggerGenerator(app, routesDir, outputPath);
-swaggerGenerator.setupSwagger();
-
-app.listen(port, () => {
-  console.log(`Server is running at http://localhost:${port}`);
-});
+// Create and start the server on port 3000
+const server = new ReportServer(3000);
+server.start();
