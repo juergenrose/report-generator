@@ -64,8 +64,6 @@ dynamic-db-reporter/
 │   │   └── styles.css         # CSS styles
 │   ├── img/
 │   │   └── barcode.png        # Barcode image
-│
-├── routes/
 │   ├── js/
 │   │   ├── app.js             # Main application file
 │   │   ├── converting.js      # Converting report files
@@ -73,6 +71,9 @@ dynamic-db-reporter/
 │   │   ├── scanner.js         # Scanner handling
 │   │   ├── suggestions.js     # Suggestions handling
 │   │   └── utils.js           # Utility functions
+│
+├── routes/
+│   └── your_report_files/  # Predefined report queries and parameters
 │
 ├── views/
 │   ├── index.html             # Start page
