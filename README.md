@@ -108,13 +108,3 @@ Contributions are welcome! Please follow these steps:
 
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
-## Contact
-
-If you have any questions or need further assistance, please feel free to contact us at [juergenrose@gmail.com].
-
-Enjoy using the Reporter API! Happy reporting!
-
-```
-
-This README file provides a comprehensive guide for setting up and using your Reporter API project, including installation instructions, configuration details, and a project structure overview.
-```
