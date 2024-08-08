@@ -8,7 +8,12 @@ class MssqlMeta {
     this.pool = mssqlConfig.getPool(poolSwitch);
   }
 
-  // Static method to map database type (dbType) to MSSQL data types
+  /**
+   * Static method to map database type (dbType) to MSSQL data types.
+   * @param {string} dbType - The database type.
+   * @returns {sql.Type} The corresponding MSSQL data type.
+   * @throws {Error} If dbType is null or undefined.
+   */
   static sqlTypeFromDb(dbType) {
     if (!dbType) {
       throw new Error("Database type (dbType) cannot be null or undefined");
@@ -56,12 +61,19 @@ class MssqlMeta {
     return sqlType;
   }
 
-  // Ensure the pool is connected
+  /**
+   * Ensure the pool is connected.
+   */
   async ensureConnected() {
     await mssqlConfig.ensureConnected(this.pool);
   }
 
-  // Helper method to execute a query with inputs
+  /**
+   * Helper method to execute a query with inputs.
+   * @param {string} query - The SQL query to execute.
+   * @param {Object[]} inputs - The inputs for the query.
+   * @returns {Promise<Object>} The query result.
+   */
   async executeQuery(query, inputs) {
     // Ensure the pool is connected before executing the query
     await this.ensureConnected();
@@ -76,7 +88,12 @@ class MssqlMeta {
     return request.query(query);
   }
 
-  // Fetch column types for specified columns from the database
+  /**
+   * Fetch column types for specified columns from the database.
+   * @param {string[]} columns - The columns to fetch data types for.
+   * @param {string} tableName - The name of the table.
+   * @returns {Object} An object mapping column names to their data types.
+   */
   async getColumnTypes(columns, tableName) {
     // Ensure the pool is connected
     await this.ensureConnected();
@@ -120,7 +137,12 @@ class MssqlMeta {
     return columnTypes;
   }
 
-  // Retrieve query parameters for predefined queries
+  /**
+   * Retrieve query parameters for predefined queries.
+   * @param {Object[]} predefinedQueries - The predefined queries to get parameters from.
+   * @param {Object} paramColumnMapping - The mapping of query parameters to column names.
+   * @returns {Object} An object mapping parameter names to their types and requirement status.
+   */
   async getQueryParams(predefinedQueries, paramColumnMapping) {
     if (!Array.isArray(predefinedQueries)) {
       throw new Error("predefinedQueries must be an array");
@@ -157,7 +179,12 @@ class MssqlMeta {
     return params;
   }
 
-  // Get suggestions based on predefined queries and input parameters
+  /**
+   * Get suggestions based on predefined queries and input parameters.
+   * @param {Object[]} predefinedQueries - The predefined queries to get suggestions from.
+   * @param {Object} params - The parameters to fetch suggestions for.
+   * @returns {string[]} An array of suggestions.
+   */
   async getSuggestions(predefinedQueries, params) {
     const { param, input } = params;
     if (!param || !input) {
@@ -191,7 +218,14 @@ class MssqlMeta {
     }
   }
 
-  // Run a query with pagination
+  /**
+   * Run a query with pagination.
+   * @param {Object} params - The parameters for the query.
+   * @param {number} pageNumber - The page number for pagination.
+   * @param {number} pageSize - The page size for pagination.
+   * @param {Object[]} predefinedQueries - The predefined queries to run.
+   * @returns {Object[]} The query results.
+   */
   async runQuery(params, pageNumber, pageSize, predefinedQueries) {
     try {
       const { query, params: queryParams } = predefinedQueries[0];
@@ -227,7 +261,17 @@ class MssqlMeta {
       };
     }
   }
-  // Run a report with pagination
+
+  /**
+   * Run a report with pagination.
+   * @param {Object[]} predefinedQueries - The predefined queries to run.
+   * @param {Object} paramColumnMapping - The mapping of query parameters to column names.
+   * @param {Object} params - The parameters for the query.
+   * @param {string} tableName - The name of the table.
+   * @param {number} [pageNumber=1] - The page number for pagination.
+   * @param {number} [pageSize=10] - The page size for pagination.
+   * @returns {Object} The report data and query parameters.
+   */
   async runReport(
     predefinedQueries,
     paramColumnMapping,

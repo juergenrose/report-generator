@@ -1,17 +1,25 @@
 const mysqlConfig = require("../config/mysql_db");
 
+// Class to handle MySQL metadata and operations
 class MysqlMeta {
   constructor(tableSchema) {
     this.connection = mysqlConfig.getConnection();
     this.tableSchema = tableSchema;
   }
 
-  // Ensure the connection is established
+  /**
+   * Ensure the MySQL connection is established.
+   */
   ensureConnection() {
     mysqlConfig.ensureConnection();
   }
 
-  // Function to get column types from INFORMATION_SCHEMA
+  /**
+   * Function to get column types from INFORMATION_SCHEMA.
+   * @param {string[]} columns - The columns to fetch data types for.
+   * @param {string} tableName - The name of the table.
+   * @returns {Object} An object mapping column names to their data types.
+   */
   async getColumnTypes(columns, tableName) {
     const columnTypes = {};
     const query = `
@@ -35,7 +43,7 @@ class MysqlMeta {
         this.tableSchema,
         tableName,
         ...columns,
-      ]); // log the actual parameters sent to the query
+      ]); // Log the actual parameters sent to the query
       const results = await this.query(query, [
         this.tableSchema,
         tableName,
@@ -58,7 +66,11 @@ class MysqlMeta {
     return columnTypes;
   }
 
-  // Function to extract and return query parameters with actual data types
+  /**
+   * Function to extract and return query parameters with actual data types.
+   * @param {Object[]} predefinedQueries - The predefined queries to get parameters from.
+   * @returns {Object} An object mapping parameter names to their types and requirement status.
+   */
   async getQueryParams(predefinedQueries) {
     const params = {};
 
@@ -89,7 +101,12 @@ class MysqlMeta {
     return params;
   }
 
-  // Function to fetch suggestions based on parameters
+  /**
+   * Function to fetch suggestions based on parameters.
+   * @param {Object[]} predefinedQueries - The predefined queries to get suggestions from.
+   * @param {Object} params - The parameters to fetch suggestions for.
+   * @returns {string[]} An array of suggestions.
+   */
   async getSuggestions(predefinedQueries, params) {
     try {
       const { param, input } = params; // Extract the parameter to be suggested and input
@@ -120,6 +137,14 @@ class MysqlMeta {
     }
   }
 
+  /**
+   * Function to run a query and fetch results.
+   * @param {Object} params - The parameters for the query.
+   * @param {number} pageNumber - The page number for pagination.
+   * @param {number} pageSize - The page size for pagination.
+   * @param {Object[]} predefinedQueries - The predefined queries to run.
+   * @returns {Object[]} The query results.
+   */
   async runQuery(params, pageNumber, pageSize, predefinedQueries) {
     try {
       // Extract the first query and its expected parameters
@@ -147,7 +172,15 @@ class MysqlMeta {
     }
   }
 
-  // Function to run the report based on provided parameters
+  /**
+   * Function to run the report based on provided parameters.
+   * @param {Object[]} predefinedQueries - The predefined queries to run.
+   * @param {Object} params - The parameters for the query.
+   * @param {string} tableName - The name of the table.
+   * @param {number} [pageNumber=1] - The page number for pagination.
+   * @param {number} [pageSize=10] - The page size for pagination.
+   * @returns {Object} The report data and query parameters.
+   */
   async runReport(
     predefinedQueries,
     params,
@@ -183,7 +216,12 @@ class MysqlMeta {
     }
   }
 
-  // Helper function to run a query using the connection
+  /**
+   * Helper function to run a query using the connection.
+   * @param {string} query - The SQL query to run.
+   * @param {any[]} params - The parameters for the query.
+   * @returns {Promise<Object[]>} A promise that resolves with the query results.
+   */
   query(query, params) {
     return new Promise((resolve, reject) => {
       this.connection.query(query, params, (err, results) => {

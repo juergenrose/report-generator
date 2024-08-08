@@ -13,7 +13,10 @@ class SwaggerGenerator {
     this.outputPath = outputPath;
   }
 
-  // Method to retrieve all JavaScript files in the routes directory
+  /**
+   * Method to retrieve all JavaScript files in the routes directory.
+   * @returns {Promise<string[]>} A promise that resolves with the list of JavaScript files.
+   */
   async getApiFiles() {
     // Read the directory contents
     const files = await fsPromise.readdir(this.routesDir);
@@ -23,7 +26,10 @@ class SwaggerGenerator {
     return jsFiles.map((file) => path.join(this.routesDir, file));
   }
 
-  // Method to generate Swagger options based on the route files
+  /**
+   * Method to generate Swagger options based on the route files.
+   * @returns {Promise<Object>} A promise that resolves with the Swagger options.
+   */
   async generateSwaggerOptions() {
     // Get the list of API files
     const apiFiles = await this.getApiFiles();
@@ -92,7 +98,11 @@ class SwaggerGenerator {
     return options;
   }
 
-  // Method to create the path configuration for a report
+  /**
+   * Method to create the path configuration for a report.
+   * @param {string} reportname - The name of the report.
+   * @returns {Object} The path configuration for the report.
+   */
   createReportPath(reportname) {
     return {
       get: {
@@ -154,7 +164,11 @@ class SwaggerGenerator {
     };
   }
 
-  // Method to create the path configuration for report suggestions
+  /**
+   * Method to create the path configuration for report suggestions.
+   * @param {string} reportname - The name of the report.
+   * @returns {Object} The path configuration for the report suggestions.
+   */
   createSuggestionsPath(reportname) {
     return {
       get: {
@@ -207,7 +221,10 @@ class SwaggerGenerator {
     };
   }
 
-  // Method to generate and save the Swagger documentation as a YAML file
+  /**
+   * Method to generate and save the Swagger documentation as a YAML file.
+   * @returns {Promise<Object>} A promise that resolves with the Swagger specifications.
+   */
   async generateAndSaveSwaggerDocs() {
     // Generate the Swagger options
     const options = await this.generateSwaggerOptions();
@@ -221,7 +238,9 @@ class SwaggerGenerator {
     return specs;
   }
 
-  // Method to set up Swagger UI middleware
+  /**
+   * Method to set up Swagger UI middleware.
+   */
   async setupSwagger() {
     // Generate and save the Swagger documentation
     const specs = await this.generateAndSaveSwaggerDocs();

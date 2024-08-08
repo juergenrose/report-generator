@@ -9,6 +9,7 @@ const {
   PdfReportHandler,
 } = require("./convert-report");
 
+// Class to handle the Report Server setup and operations
 class ReportServer {
   constructor(port) {
     this.app = express();
@@ -18,7 +19,9 @@ class ReportServer {
     this.setupSwagger();
   }
 
-  // Set up middleware for the Express application
+  /**
+   * Set up middleware for the Express application.
+   */
   setupMiddleware() {
     this.app.use(cors());
     this.app.use(express.static("public"));
@@ -31,7 +34,9 @@ class ReportServer {
     this.app.set("view engine", "html");
   }
 
-  // Set up routes for the Express application
+  /**
+   * Set up routes for the Express application.
+   */
   setupRoutes() {
     // Route for serving the index.html file
     this.app.get("/", this.serveStartPage);
@@ -56,15 +61,29 @@ class ReportServer {
     );
   }
 
+  /**
+   * Serve the start page (index.html).
+   * @param {Object} req - The request object.
+   * @param {Object} res - The response object.
+   */
   serveStartPage(req, res) {
     res.sendFile(path.join(__dirname, "views", "index.html"));
   }
 
+  /**
+   * Serve the report page (report.html).
+   * @param {Object} req - The request object.
+   * @param {Object} res - The response object.
+   */
   serveReportPage(req, res) {
     res.sendFile(path.join(__dirname, "views", "report.html"));
   }
 
-  // List all available reports by reading the "routes" directory
+  /**
+   * List all available reports by reading the "routes" directory.
+   * @param {Object} req - The request object.
+   * @param {Object} res - The response object.
+   */
   async listReports(req, res) {
     try {
       const reportsDirectory = path.join(__dirname, "routes");
@@ -78,7 +97,11 @@ class ReportServer {
     }
   }
 
-  // Get parameters required for a specific report by loading the report module
+  /**
+   * Get parameters required for a specific report by loading the report module.
+   * @param {Object} req - The request object.
+   * @param {Object} res - The response object.
+   */
   async getReportParameters(req, res) {
     const { reportname } = req.params;
     const reportFilePath = path.join(__dirname, "routes", `${reportname}.js`);
@@ -97,7 +120,11 @@ class ReportServer {
     }
   }
 
-  // Generate a report based on provided parameters and format
+  /**
+   * Generate a report based on provided parameters and format.
+   * @param {Object} req - The request object.
+   * @param {Object} res - The response object.
+   */
   async generateReport(req, res) {
     const { reportname } = req.params;
     const { barcode, download, format } = req.query;
@@ -163,7 +190,11 @@ class ReportServer {
     }
   }
 
-  // Get suggestions for a specific report based on query parameters
+  /**
+   * Get suggestions for a specific report based on query parameters.
+   * @param {Object} req - The request object.
+   * @param {Object} res - The response object.
+   */
   async getSuggestions(req, res) {
     const { reportname } = req.params;
     try {
@@ -190,7 +221,9 @@ class ReportServer {
     }
   }
 
-  // Set up Swagger for API documentation
+  /**
+   * Set up Swagger for API documentation.
+   */
   setupSwagger() {
     const routesDir = path.join(__dirname, "routes");
     const outputPath = path.join(__dirname, "swagger.yaml");
@@ -202,7 +235,9 @@ class ReportServer {
     swaggerGenerator.setupSwagger();
   }
 
-  // Start the server
+  /**
+   * Start the server.
+   */
   start() {
     this.app.listen(this.port, () => {
       console.log(`Server is running at http://localhost:${this.port}`);

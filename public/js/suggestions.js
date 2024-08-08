@@ -1,19 +1,24 @@
-//function to fetch suggestions for a parameter based on user input
+/**
+ * Function to fetch suggestions for a parameter based on user input.
+ * @param {string} reportname - The name of the report.
+ * @param {string} param - The name of the parameter.
+ * @param {string} input - The user input for the parameter.
+ */
 async function fetchSuggestions(reportname, param, input) {
-  //get the div to display the results for the current parameter
+  // Get the div to display the results for the current parameter
   const resultsDiv = document.getElementById(`${param}-results`);
-  //clear the results if the input is empty
+  // Clear the results if the input is empty
   if (input.length < 1) {
     resultsDiv.innerHTML = "";
     return;
   }
-  //create a FormData object and append the parameter name and user input
+  // Create a FormData object and append the parameter name and user input
   const formData = new FormData(document.getElementById("reportForm"));
   formData.append("param", param);
   formData.append("input", input);
 
   try {
-    //construct the URL with query parameters from the FormData object
+    // Construct the URL with query parameters from the FormData object
     const url = `/api/report/${reportname}/suggestions?${new URLSearchParams(
       formData
     ).toString()}`;
@@ -23,9 +28,9 @@ async function fetchSuggestions(reportname, param, input) {
       throw new Error(`HTTP error! Status: ${response.status}`);
     }
     const data = await response.json();
-    //check if the data contains an array of suggestions
+    // Check if the data contains an array of suggestions
     if (Array.isArray(data.suggestions)) {
-      //generate HTML for suggestions and display them
+      // Generate HTML for suggestions and display them
       resultsDiv.innerHTML = data.suggestions
         .map(
           (suggestion) =>
@@ -41,8 +46,14 @@ async function fetchSuggestions(reportname, param, input) {
   }
 }
 
-//function to select a suggestion for a parameter
+/**
+ * Function to select a suggestion for a parameter.
+ * @param {string} param - The name of the parameter.
+ * @param {string} suggestion - The selected suggestion.
+ */
 function selectSuggestion(param, suggestion) {
+  // Set the input field value to the selected suggestion
   document.getElementById(param).value = suggestion;
+  // Clear the suggestions display
   document.getElementById(`${param}-results`).innerHTML = "";
 }

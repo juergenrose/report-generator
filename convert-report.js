@@ -8,7 +8,13 @@ const xml2js = require("xml2js");
 class ReportHandler {
   constructor() {}
 
-  // Helper function to flatten nested objects
+  /**
+   * Helper function to flatten nested objects.
+   * @param {Object} obj - The object to flatten.
+   * @param {string} [parent=""] - The parent key prefix.
+   * @param {Object} [res={}] - The result object to store flattened key-value pairs.
+   * @returns {Object} The flattened object.
+   */
   static flattenObject(obj, parent = "", res = {}) {
     for (let key in obj) {
       const propName = parent ? `${parent}.${key}` : key;
@@ -29,7 +35,9 @@ class CountryFlags {
     this.flags = {}; // Initialize an empty object to store flags
   }
 
-  // Method to load country flags from an XML file
+  /**
+   * Method to load country flags from an XML file.
+   */
   async loadCountryFlags() {
     try {
       const xmlFile = path.join(__dirname, "countryFlags.xml");
@@ -45,7 +53,11 @@ class CountryFlags {
     }
   }
 
-  // Method to get the flag URL for a given country code
+  /**
+   * Method to get the flag URL for a given country code.
+   * @param {string} countryCode - The country code.
+   * @returns {string} The flag URL.
+   */
   getFlagUrl(countryCode) {
     return this.flags[countryCode] || "";
   }
@@ -57,7 +69,12 @@ class CsvReportHandler extends ReportHandler {
     super();
   }
 
-  // Method to generate and save CSV report
+  /**
+   * Method to generate and save CSV report.
+   * @param {string} reportname - The name of the report.
+   * @param {Object} reportData - The report data.
+   * @returns {string} The generated CSV data.
+   */
   async handleCsvReport(reportname, reportData) {
     try {
       const data = reportData.data || reportData;
@@ -88,7 +105,14 @@ class JsonReportHandler extends ReportHandler {
     super();
   }
 
-  // Method to generate and handle JSON report
+  /**
+   * Method to generate and handle JSON report.
+   * @param {string} reportname - The name of the report.
+   * @param {Object} reportData - The report data.
+   * @param {Object} res - The response object.
+   * @param {Object} queryParams - The query parameters.
+   * @param {boolean} [isDownload=false] - Flag to indicate if the report is for download.
+   */
   async handleJsonReport(
     reportname,
     reportData,
@@ -127,7 +151,14 @@ class PdfReportHandler extends ReportHandler {
     super();
   }
 
-  // Method to generate PDF content from report data
+  /**
+   * Method to generate PDF content from report data.
+   * @param {string} reportname - The name of the report.
+   * @param {Object} reportData - The report data.
+   * @param {Object} queryParams - The query parameters.
+   * @param {boolean} [isDownload=false] - Flag to indicate if the PDF is for download.
+   * @returns {Buffer} The generated PDF buffer.
+   */
   async generatePdfContent(
     reportname,
     reportData,
@@ -194,7 +225,14 @@ class PdfReportHandler extends ReportHandler {
     return pdfBuffer;
   }
 
-  // Method to generate HTML content for the PDF
+  /**
+   * Method to generate HTML content for the PDF.
+   * @param {string} reportname - The name of the report.
+   * @param {Object} reportData - The report data.
+   * @param {Object} queryParams - The query parameters.
+   * @param {CountryFlags} countryFlags - The country flags instance.
+   * @returns {string} The generated HTML content.
+   */
   generateHtmlContent(reportname, reportData, queryParams, countryFlags) {
     // Remove unnecessary 'reportList' parameter
     const cleanQueryParams = { ...queryParams };
